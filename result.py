@@ -1,3 +1,6 @@
+import enum
+
+
 class ExposureResult(enum.Enum):
     UNDER_EXPOSED = 0
     NORMAL = 1

@@ -7,7 +7,7 @@ from constants import (OVER_EXP_THRESHOLD, UNDER_EXP_THRESHOLD, OVER_EXP_WHITE_C
                        VIEW_FINDER_SCALE_H, VIEW_FINDER_SCALE_W, SHARPNESS_THRESHOLD,
                        CROP_RATIO, MIN_MATCH_COUNT)
 from result import (ExposureResult, CaptureResult, InterpretationResult, SizeResult)
-from utils import (show_image)
+from utils import (show_image, resize_image)
 
 class ImageProcessor:
     def __init__(self, src):
@@ -16,11 +16,13 @@ class ImageProcessor:
         height, width = self.img.shape
         self.height = height
         self.width = width
-        self.featureDetector = cv.BRISK_create(45, 4, 1.0)
+        self.featureDetector = cv.BRISK_create(45, 4, 1)
         self.matcher = cv.BFMatcher(cv.NORM_L1, crossCheck=False)
         # Load reference image for Quickvue flu test strip
-        self.fluRefImg = cv.imread(
-            'resources/quickvue_ref.jpg', cv.IMREAD_GRAYSCALE)
+        self.fluRefImg = resize_image(
+            'resources/quickvue_ref.jpg', gray=True, scale_percent=400)
+        # show_image(self.fluRefImg)
+        # print(self.fluRefImg)
         # Load reference image for SD Bioline Malaria RDT
         self.malariaRefImg = cv.imread(
             '/resources/sd_bioline_malaria_ag_pf.jpg', cv.IMREAD_GRAYSCALE)
@@ -72,7 +74,7 @@ class ImageProcessor:
         hist_h = 400
         cv.normalize(hist, hist, alpha=height/2, beta=0,
                      norm_type=cv.NORM_INF)
-        # print(hist.shape)
+        print(hist.shape)
         # plt.plot(hist)
         # plt.title('Histogram of grey scale pixels')
         # plt.xlabel('Pixel Value')
@@ -116,7 +118,7 @@ class ImageProcessor:
     def detectRDT(self, img):
         print('[INFO] start detectRDT')
         startTime = time.time()
-
+        # show_image(img)
         height, width = img.shape
         mask = np.zeros(img.shape, np.uint8)
         p1 = (0, int(height * (1 - VIEW_FINDER_SCALE_W / CROP_RATIO) / 2))
@@ -125,11 +127,12 @@ class ImageProcessor:
         #     (p2[0] - p1[0], p2[1] - p1[1]), 255
         # )
         mask[p1[0]: p2[0], p1[1]: p2[1]] = 255
-
-        keypoints, descriptors = self.siftDetector.detectAndCompute(img, mask)
+        keypoints, descriptors = self.siftDetector.detectAndCompute(img, None)
+        # keypoints, descriptors = self.siftDetector.detectAndCompute(img, mask)
         print('[INFO] detect/compute time: ', time.time() - startTime)
         print('[INFO] descriptors')
         print(descriptors)
+        # TODO: Find condition for this
         # if (descriptors == None or all(descriptors)):
         #     print('[WARNING] No Features on input')
         #     return None
@@ -153,7 +156,8 @@ class ImageProcessor:
         good = []
         img2 = None
         dst = None
-        good = matches[:20]
+        good = matches[:50]
+        print('[INFO] matches')
         # for m in matches:
         #     if m.distance < 0.7:
         #         good.append(m)
@@ -178,7 +182,7 @@ class ImageProcessor:
             matchesMask = None
             return None
 
-        draw_params = dict(matchColor = (0,255,0), # draw matches in green color
+        draw_params = dict(matchColor = (255,0,0), # draw matches in green color
                    singlePointColor = None,
                    matchesMask = matchesMask, # draw only inliers
                    flags = 2)
@@ -187,7 +191,7 @@ class ImageProcessor:
         return dst 
 
 
-    def getBoundarySize(boundary):
+    def getBoundarySize(self, boundary):
         xMax = -1
         xMin = -1 
         yMin = -1 
@@ -226,19 +230,21 @@ class ImageProcessor:
         isSharp = self.checkSharpness(roi)
 
         if (exposureResult == ExposureResult.NORMAL and isSharp):
-            boundary = detectRDT(img)
+            boundary = self.detectRDT(img)
             isCentered = False
             sizeResult = SizeResult.INVALID
             isRightOrientation = False
             angle = 0.0
-            w, h = getBoundarySize(boundary)
+            w, h = self.getBoundarySize(boundary)
 
             if (w > 0 and h > 0):
-                isCentered = checkIfCentered(boundary, img.shape)
-                sizeResult = checkSize(boundary, img.shape)
-                isRightOrientation = checkOrientation(boundary)
-                angle = measureOrientation(boundary)
+                isCentered = self.checkIfCentered(boundary, img.shape)
+                sizeResult = self.checkSize(boundary, img.shape)
+                isRightOrientation = self.checkOrientation(boundary)
+                angle = self.measureOrientation(boundary)
             passed = sizeResult == SizeResult.RIGHT_SIZE and isCentered and isRightOrientation
-            return CaptureResult()
+            return None
+            # return CaptureResult()
         else:
-            return CaptureResult()
+            return None
+            # return CaptureResult()
