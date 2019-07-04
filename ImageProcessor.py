@@ -5,7 +5,7 @@ import enum
 import time
 from constants import (OVER_EXP_THRESHOLD, UNDER_EXP_THRESHOLD, OVER_EXP_WHITE_COUNT,
                        VIEW_FINDER_SCALE_H, VIEW_FINDER_SCALE_W, SHARPNESS_THRESHOLD,
-                       CROP_RATIO, MIN_MATCH_COUNT)
+                       CROP_RATIO, MIN_MATCH_COUNT, POSITION_THRESHOLD, ANGLE_THRESHOLD)
 from result import (ExposureResult, CaptureResult, InterpretationResult, SizeResult)
 from utils import (show_image, resize_image)
 
@@ -120,13 +120,8 @@ class ImageProcessor:
         startTime = time.time()
         # show_image(img)
         height, width = img.shape
-        mask = np.zeros(img.shape, np.uint8)
         p1 = (0, int(height * (1 - VIEW_FINDER_SCALE_W / CROP_RATIO) / 2))
         p2 = (int(width - p1[0]), int(height - p1[1]))
-        # mask[p1[0]: p2[0], p1[1]: p2[1]] = np.full(
-        #     (p2[0] - p1[0], p2[1] - p1[1]), 255
-        # )
-        mask[p1[0]: p2[0], p1[1]: p2[1]] = 255
         keypoints, descriptors = self.siftDetector.detectAndCompute(img, None)
         # keypoints, descriptors = self.siftDetector.detectAndCompute(img, mask)
         print('[INFO] detect/compute time: ', time.time() - startTime)
@@ -187,7 +182,7 @@ class ImageProcessor:
                    matchesMask = matchesMask, # draw only inliers
                    flags = 2)
         img3 = cv.drawMatches(self.fluRefImg,self.refSiftKeyPoints,img2,keypoints,good,None,**draw_params)
-        plt.imshow(img3, 'gray'),plt.show()
+        # plt.imshow(img3, 'gray'),plt.show()
         return dst 
 
 
@@ -205,17 +200,85 @@ class ImageProcessor:
             yMax = max(yMax, y)
         return (xMax - xMin, yMax - yMin)
 
-    def checkIfCentered(self, boundary, imgShape):
+    def checkIfCentered(self, boundary, imgShape, img):
         print('[INFO] checkIfCentered')
+        center = self.measureCenter(boundary, img)
+        print('[INFO] rotated rect center', center)
+        w, h  = imgShape
+        trueCenter = (w/2 , h/2)
+        isCentered = center[0] < trueCenter[0] + (w * POSITION_THRESHOLD) and center[0] > trueCenter[0]-(w *POSITION_THRESHOLD) and center[1] < trueCenter[1]+(h *POSITION_THRESHOLD) and center[1] > trueCenter[1]-(h*POSITION_THRESHOLD)
+        print('[INFO] isCentered:', isCentered)
+        # TODO: draw image to show how to get isCentered
+        return isCentered
+        
+
+    def measureCenter(self, boundary, img):
+        rect = cv.minAreaRect(boundary)
+        print('[INFO] rotated rect', rect)
+        # box = cv.boxPoints(rect)
+        # box = np.int0(box)
+        # show_image(img)
+        # cv.drawContours(img,[box],0,(0,0,255),2)
+        # show_image(img)
+
+        # TODO: Maybe we can visualize how this rectangle is compared to the original rect
+        return rect[0]
 
     def checkSize(self, boundary, imgShape):
         print('[INFO] checkSize')
+        width, height = imgShape
+        largestDimension = self.measureSize(boundary)
+        print('[INFO] height', height)
+        # TODO: not sure if we even need the view finder scale??
+        isRightSize = largestDimension < width * VIEW_FINDER_SCALE_H + 100 and largestDimension > width * VIEW_FINDER_SCALE_H - 100
+        
+        sizeResult = SizeResult.INVALID
+        if isRightSize:
+            sizeResult = SizeResult.RIGHT_SIZE
+        elif largestDimension > height * VIEW_FINDER_SCALE_H + 100:
+                sizeResult = SizeResult.LARGE
+        elif largestDimension < height * VIEW_FINDER_SCALE_H - 100:
+            sizeResult = SizeResult.SMALL
+        else:
+            sizeResult = SizeResult.INVALID
+        print('[INFO] sizeResult', sizeResult)
+        return sizeResult
+
+    
+    def measureSize(self, boundary):
+        (x, y), (width, height), angle = cv.minAreaRect(boundary)
+        isUpright = height > width
+        angle = 0
+        h = 0
+        if (isUpright):
+            angle = 90 - abs(angle)
+        else:
+            angle = abs(angle)
+        return  height if isUpright else width
 
     def checkOrientation(self, boundary):
         print('[INFO] checkIfCentered')
+        angle = self.measureOrientation(boundary)
+        print('[INFO] measured angle', angle)
+        isOriented = abs(angle) < ANGLE_THRESHOLD
+        print('[INFO] isOriented', isOriented)
+        return isOriented
 
     def measureOrientation(self, boundary):
         print('[INFO] checkIfCentered')
+        (x, y), (width, height), rotatedAngle = cv.minAreaRect(boundary)
+        isUpright = height > width
+        angle = 0
+        if (isUpright):
+            # TODO: why????
+            if (rotatedAngle < 0):
+                angle = 90 + rotatedAngle
+            else:
+                angle = rotatedAngle - 90
+        else:
+            angle = rotatedAngle
+
+        return angle
 
     def captureRDT(self, src):
         img = cv.imread(src, cv.IMREAD_GRAYSCALE)
@@ -236,15 +299,22 @@ class ImageProcessor:
             isRightOrientation = False
             angle = 0.0
             w, h = self.getBoundarySize(boundary)
+            print('[INFO] width, height of boundary', w, h)
 
             if (w > 0 and h > 0):
-                isCentered = self.checkIfCentered(boundary, img.shape)
+                isCentered = self.checkIfCentered(boundary, img.shape, img)
                 sizeResult = self.checkSize(boundary, img.shape)
                 isRightOrientation = self.checkOrientation(boundary)
                 angle = self.measureOrientation(boundary)
             passed = sizeResult == SizeResult.RIGHT_SIZE and isCentered and isRightOrientation
-            return None
-            # return CaptureResult()
+            # TODO: what does the cropRDT do? do we even need that?
+            res = CaptureResult(passed, img, -1 , exposureResult, sizeResult, isCentered, isRightOrientation, isSharp, False, angle)
+            print('[INFO] res', res)
+            return res
         else:
-            return None
-            # return CaptureResult()
+            res = CaptureResult(passed, None, -1 , exposureResult, SizeResult.INVALID, False, False, isSharp, False, 0.0)
+            print('[INFO] res', res)
+            return res
+
+    def interpretResult(self, src):
+        print('[INFO] interpretResult')

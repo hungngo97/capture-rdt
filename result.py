@@ -21,6 +21,16 @@ class CaptureResult():
         self.isShadow = isShadow
         self.angle = angle
 
+    # For call to repr(). Prints object's information
+    def __repr__(self):
+        return 'CaptureResult(%s, %s, %s, %s, %s, %s, %s, %s)' % (self.allChecksPassed, self.exposureResult, self.sizeResult,
+                                                                  self.isCentered, self.isRightOrientation, self.isSharp, self.isShadow, self.angle)
+
+    # For call to str(). Prints readable form
+    def __str__(self):
+        return 'CaptureResult(%s, %s, %s, %s, %s, %s, %s, %s)' % (self.allChecksPassed, self.exposureResult, self.sizeResult,
+                                                                  self.isCentered, self.isRightOrientation, self.isSharp, self.isShadow, self.angle)
+
 
 class InterpretationResult():
     def __init__(self, resultImg, control, testA, testB):

@@ -12,3 +12,9 @@ CROP_RATIO = 0.6
 
 # Homography
 MIN_MATCH_COUNT = 7
+
+# Is centered
+POSITION_THRESHOLD = 0.2
+
+# Oritentation
+ANGLE_THRESHOLD = 10
