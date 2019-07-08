@@ -24,7 +24,7 @@ class ImageProcessor:
         self.matcher = cv.BFMatcher(cv.NORM_L1, crossCheck=False)
         # Load reference image for Quickvue flu test strip
         self.fluRefImg = resize_image(
-            'resources/quickvue_ref.jpg', gray=True, scale_percent=400)
+            'resources/quickvue_ref_v4_1.jpg', gray=True, scale_percent=400)
         # show_image(self.fluRefImg)
         # print(self.fluRefImg)
         # Load reference image for SD Bioline Malaria RDT
@@ -325,8 +325,8 @@ class ImageProcessor:
     def cropResultWindow(self, img, boundary):
         print('[INFO] cropResultWindow started')
         h, w = self.fluRefImg.shape
-        img2 = cv.polylines(img,[np.int32(boundary)],True,(255,0,0))
-        show_image(img2)
+        # img2 = cv.polylines(img,[np.int32(boundary)],True,(255,0,0))
+        # show_image(img2)
         refBoundary = np.float32([ [0,0], [0,h-1],[w-1,h-1],[w-1,0]]).reshape(-1,1,2)
         print('Refboundary', refBoundary)
         print('Boundary', boundary)
@@ -348,32 +348,42 @@ class ImageProcessor:
         kernelDilate = np.ones((20,20), np.uint8)
         # Threshold the HSV image to get only blue colors
         threshold = cv.inRange(hls, CONTROL_LINE_COLOR_LOWER, CONTROL_LINE_COLOR_UPPER)
+        # show_image(threshold)
         threshold = cv.erode(threshold, kernelErode,iterations = 1)
         threshold = cv.dilate(threshold,kernelDilate,iterations = 1)
         threshold = cv.GaussianBlur(threshold,(5,5),2, 2)
         # show_image(threshold)
         im2, contours, hierarchy = cv.findContours(threshold ,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
-        cv.drawContours(img, contours, -1, (0,255,0), 3)
-        show_image(img)
+        # cv.drawContours(img, contours, -1, (0,255,0), 3)
+        # show_image(img)
         # show_image(im2)
         controlLineRect = None
         for contour in contours:
-            x,y,w,h = cv.boundingRect(contour)
+            # x,y,w,h = cv.boundingRect(contour)
+            rect = cv.minAreaRect(contour)
+            ((x, y) , (w, h), angle) = rect
             print('[INFO] boundingRect', x, y, w, h)
-            # cv.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
-            # show_image(img)
             # TODO: maybe ask CJ should we change the constants control line?s
+            # ('[INFO] boundingRect', 1344, 0, 70, 112)
             if (CONTROL_LINE_POSITION_MIN < x and x < CONTROL_LINE_POSITION_MAX and 
                 CONTROL_LINE_MIN_HEIGHT < h and CONTROL_LINE_MIN_WIDTH < w and w < CONTROL_LINE_MAX_WIDTH):
                 print('[INFO] controlLine found!')
+                # cv.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
+                # show_image(img)
                 controlLineRect = Rect(x, y, w, h)
+                box = cv.boxPoints(rect)
+                box = np.int0(box)
+                cv.drawContours(img,[box],0,(0,0,255),2)
+                show_image(img)
 
         return controlLineRect
 
     def interpretResult(self, src):
         print('[INFO] interpretResult')
-        colorImg = cv.imread(src, cv.IMREAD_COLOR)
+        # colorImg = cv.imread(src, cv.IMREAD_COLOR)
+        colorImg = cv.imread(src, cv.COLOR_BGR2RGB)
         img = cv.imread(src, cv.IMREAD_GRAYSCALE)
+        # show_image(colorImg)
 
         cnt = 3
         isSizeable = SizeResult.INVALID
@@ -400,7 +410,7 @@ class ImageProcessor:
         result = self.cropResultWindow(colorImg, boundary)
         control, testA, testB = False, False, False
 
-        if (result.shape[0] == 0 and result.shape[1] == 0):
+        if (result[0] == 0 and result[1] == 0):
             return InterpretationResult(result, False, False, False)
         
         result = self.enhanceResultWindow(result, (5, result.shape[1]))

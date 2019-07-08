@@ -1,6 +1,6 @@
 from ImageProcessor import ImageProcessor
 
-INPUT_IMAGE = 'input/testimg8.jpg'
+INPUT_IMAGE = 'input/testimg8_1.jpg'
 
 imgProc = ImageProcessor(INPUT_IMAGE)
 # imgProc.captureRDT(INPUT_IMAGE)
