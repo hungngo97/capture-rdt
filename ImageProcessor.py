@@ -5,15 +5,19 @@ import enum
 import time
 from constants import (OVER_EXP_THRESHOLD, UNDER_EXP_THRESHOLD, OVER_EXP_WHITE_COUNT,
                        VIEW_FINDER_SCALE_H, VIEW_FINDER_SCALE_W, SHARPNESS_THRESHOLD,
-                       CROP_RATIO, MIN_MATCH_COUNT, POSITION_THRESHOLD, ANGLE_THRESHOLD)
+                       CROP_RATIO, MIN_MATCH_COUNT, POSITION_THRESHOLD, ANGLE_THRESHOLD,
+                       CONTROL_LINE_POSITION, TEST_A_LINE_POSITION, TEST_B_LINE_POSITION,
+                       CONTROL_LINE_COLOR_UPPER, CONTROL_LINE_COLOR_LOWER, CONTROL_LINE_POSITION_MIN,
+                       CONTROL_LINE_POSITION_MAX, CONTROL_LINE_MIN_HEIGHT, CONTROL_LINE_MIN_WIDTH,
+                       CONTROL_LINE_MAX_WIDTH)
 from result import (ExposureResult, CaptureResult, InterpretationResult, SizeResult)
-from utils import (show_image, resize_image)
+from utils import (show_image, resize_image, Point, Rect)
 
 class ImageProcessor:
     def __init__(self, src):
         self.src = src
         self.img = cv.imread(src, cv.IMREAD_GRAYSCALE)
-        height, width = self.img.shape
+        width, height = self.img.shape
         self.height = height
         self.width = width
         self.featureDetector = cv.BRISK_create(45, 4, 1)
@@ -68,7 +72,7 @@ class ImageProcessor:
         histSize = 256
         histRange = (0, 256)  # the upper boundary is exclusive
         accumulate = False
-        height, width = src.shape
+        width, height = src.shape
 
         hist = cv.calcHist([self.img], [0], None, [256], [0, 256])
         hist_h = 400
@@ -83,7 +87,7 @@ class ImageProcessor:
         return hist
 
     def getViewfinderRect(self, img):
-        height, width = img.shape
+        width, height = img.shape
         p1 = (int(width * (1 - VIEW_FINDER_SCALE_H)/2),
               int(height * (1 - VIEW_FINDER_SCALE_W) / 2))
         p2 = (int(width - p1[0]), int(height - p1[1]))
@@ -115,11 +119,11 @@ class ImageProcessor:
         print('[INFO] sharpness ', sharpness)
         return sharpness
 
-    def detectRDT(self, img):
+    def detectRDT(self, img, cnt=5):
         print('[INFO] start detectRDT')
         startTime = time.time()
         # show_image(img)
-        height, width = img.shape
+        width, height = img.shape
         p1 = (0, int(height * (1 - VIEW_FINDER_SCALE_W / CROP_RATIO) / 2))
         p2 = (int(width - p1[0]), int(height - p1[1]))
         keypoints, descriptors = self.siftDetector.detectAndCompute(img, None)
@@ -159,10 +163,12 @@ class ImageProcessor:
         if len(good)> MIN_MATCH_COUNT:
             src_pts = np.float32([ self.refSiftKeyPoints[m.queryIdx].pt for m in good ]).reshape(-1,1,2)
             dst_pts = np.float32([ keypoints[m.trainIdx].pt for m in good ]).reshape(-1,1,2)
-            M, mask = cv.findHomography(src_pts, dst_pts, cv.RANSAC,5.0)
+            print('src_pts', src_pts)
+            print('dst_pst', dst_pts)
+            M, mask = cv.findHomography(src_pts, dst_pts, cv.RANSAC, cnt)
             print('[INFO] Finish finding Homography')
             print('[INFO] M Matrix', M)
-            print('[INFO] mask', mask)
+            # print('[INFO] mask', mask)
             matchesMask = mask.ravel().tolist()
             h,w = self.fluRefImg.shape
             pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
@@ -316,5 +322,91 @@ class ImageProcessor:
             print('[INFO] res', res)
             return res
 
+    def cropResultWindow(self, img, boundary):
+        print('[INFO] cropResultWindow started')
+        h, w = self.fluRefImg.shape
+        img2 = cv.polylines(img,[np.int32(boundary)],True,(255,0,0))
+        show_image(img2)
+        refBoundary = np.float32([ [0,0], [0,h-1],[w-1,h-1],[w-1,0]]).reshape(-1,1,2)
+        print('Refboundary', refBoundary)
+        print('Boundary', boundary)
+        M = cv.getPerspectiveTransform(boundary, refBoundary)
+        transformedImage = cv.warpPerspective(img,M, (self.fluRefImg.shape[1], self.fluRefImg.shape[0]))
+        # show_image(transformedImage)
+
+        controlLineRect = self.checkControlLine(transformedImage)
+        if (controlLineRect is None or (controlLineRect.w == 0 and controlLineRect.h == 0)):
+            return (0,0)
+        return (controlLineRect.w, controlLineRect.h)
+    def checkControlLine(self, img):
+        print('[INFO] checkControlLine')
+        hls = cv.cvtColor(img, cv.COLOR_RGBA2RGB)
+        hls = cv.cvtColor(hls, cv.COLOR_RGB2HLS)
+        # show_image(hls)
+
+        kernelErode = np.ones((5,5),np.uint8)
+        kernelDilate = np.ones((20,20), np.uint8)
+        # Threshold the HSV image to get only blue colors
+        threshold = cv.inRange(hls, CONTROL_LINE_COLOR_LOWER, CONTROL_LINE_COLOR_UPPER)
+        threshold = cv.erode(threshold, kernelErode,iterations = 1)
+        threshold = cv.dilate(threshold,kernelDilate,iterations = 1)
+        threshold = cv.GaussianBlur(threshold,(5,5),2, 2)
+        # show_image(threshold)
+        im2, contours, hierarchy = cv.findContours(threshold ,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
+        cv.drawContours(img, contours, -1, (0,255,0), 3)
+        show_image(img)
+        # show_image(im2)
+        controlLineRect = None
+        for contour in contours:
+            x,y,w,h = cv.boundingRect(contour)
+            print('[INFO] boundingRect', x, y, w, h)
+            # cv.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
+            # show_image(img)
+            # TODO: maybe ask CJ should we change the constants control line?s
+            if (CONTROL_LINE_POSITION_MIN < x and x < CONTROL_LINE_POSITION_MAX and 
+                CONTROL_LINE_MIN_HEIGHT < h and CONTROL_LINE_MIN_WIDTH < w and w < CONTROL_LINE_MAX_WIDTH):
+                print('[INFO] controlLine found!')
+                controlLineRect = Rect(x, y, w, h)
+
+        return controlLineRect
+
     def interpretResult(self, src):
         print('[INFO] interpretResult')
+        colorImg = cv.imread(src, cv.IMREAD_COLOR)
+        img = cv.imread(src, cv.IMREAD_GRAYSCALE)
+
+        cnt = 3
+        isSizeable = SizeResult.INVALID
+        isCentered = False
+        isUpright = False
+        boundary = None
+
+        # TODO: what is the purpose of cnt in here? Just to ensure that it loops many time?
+
+        while (not(isSizeable == SizeResult.RIGHT_SIZE and isCentered and isUpright) and cnt < 4):
+            cnt += 1
+            boundary = self.detectRDT(img, cnt)
+            print('[SIFT boundary size]: ', boundary.shape)
+            isSizeable = self.checkSize(boundary, img.shape)
+            isCentered = self.checkIfCentered(boundary, img.shape, img)
+            isUpright = self.checkOrientation(boundary)
+            print("[INFO] SIFT-right size %s, center %s, orientation %s, (%.2f, %.2f), cnt %d", isSizeable, isCentered, isUpright, img.shape[0], img.shape[1], cnt)
+
+        if (boundary.shape[0] <= 0 and boundary.shape[1] <= 0):
+            return InterpretationResult()
+        print('flurefimgshp,', self.fluRefImg.shape)
+        print('Imgshep', img.shape)
+        print('boundary', boundary)
+        result = self.cropResultWindow(colorImg, boundary)
+        control, testA, testB = False, False, False
+
+        if (result.shape[0] == 0 and result.shape[1] == 0):
+            return InterpretationResult(result, False, False, False)
+        
+        result = self.enhanceResultWindow(result, (5, result.shape[1]))
+        # result = self.correctGamma(result, 0.75)
+        # TODO: do we need to do correct Gamma?
+
+        control = self.readControlLine(result, Point(CONTROL_LINE_POSITION, 0))
+        testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
+        testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION))

@@ -33,7 +33,7 @@ class CaptureResult():
 
 
 class InterpretationResult():
-    def __init__(self, resultImg, control, testA, testB):
+    def __init__(self, resultImg=None, control=None, testA=None, testB=None):
         self.resultImg = resultImg
         self.control = control
         self.testA = testA

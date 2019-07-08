@@ -24,3 +24,17 @@ def resize_image(src, gray=True, scale_percent=400):
     # resize image
     resized = cv.resize(img, dim, interpolation=cv.INTER_AREA)
     return resized
+
+
+class Point():
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+
+class Rect():
+    def __init__(self, x, y, w, h):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h

@@ -13,7 +13,9 @@
 ## Install
 
 ```sh
-brew install opencv &amp;&amp; pip install numpy matplotlib
+brew install opencv
+pip install numpy matplotlib
+pip install opencv-python opencv-contrib-python
 ```
 
 ## Usage
