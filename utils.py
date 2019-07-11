@@ -26,6 +26,25 @@ def resize_image(src, gray=True, scale_percent=400):
     return resized
 
 
+def crop_rect(img, rect):
+    # get the parameter of the small rectangle
+    center = rect[0]
+    size = rect[1]
+    angle = rect[2]
+    center, size = tuple(map(int, center)), tuple(map(int, size))
+
+    # get row and col num in img
+    height, width = img.shape[0], img.shape[1]
+    print("width: {}, height: {}".format(width, height))
+
+    M = cv.getRotationMatrix2D(center, angle, 1)
+    img_rot = cv.warpAffine(img, M, (width, height))
+
+    img_crop = cv.getRectSubPix(img_rot, size, center)
+
+    return img_crop, img_rot
+
+
 class Point():
     def __init__(self, x, y):
         self.x = x

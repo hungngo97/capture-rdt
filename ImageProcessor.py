@@ -9,9 +9,12 @@ from constants import (OVER_EXP_THRESHOLD, UNDER_EXP_THRESHOLD, OVER_EXP_WHITE_C
                        CONTROL_LINE_POSITION, TEST_A_LINE_POSITION, TEST_B_LINE_POSITION,
                        CONTROL_LINE_COLOR_UPPER, CONTROL_LINE_COLOR_LOWER, CONTROL_LINE_POSITION_MIN,
                        CONTROL_LINE_POSITION_MAX, CONTROL_LINE_MIN_HEIGHT, CONTROL_LINE_MIN_WIDTH,
-                       CONTROL_LINE_MAX_WIDTH)
+                       CONTROL_LINE_MAX_WIDTH, FIDUCIAL_MAX_WIDTH, FIDUCIAL_MIN_HEIGHT, FIDUCIAL_MIN_WIDTH,
+                       FIDUCIAL_POSITION_MAX, FIDUCIAL_POSITION_MIN, FIDUCIAL_TO_CONTROL_LINE_OFFSET,
+                       RESULT_WINDOW_RECT_HEIGHT, RESULT_WINDOW_RECT_WIDTH_PADDING, FIDUCIAL_COUNT,
+                       FIDUCIAL_DISTANCE, ANGLE_THRESHOLD)
 from result import (ExposureResult, CaptureResult, InterpretationResult, SizeResult)
-from utils import (show_image, resize_image, Point, Rect)
+from utils import (show_image, resize_image, Point, Rect, crop_rect)
 
 class ImageProcessor:
     def __init__(self, src):
@@ -322,7 +325,7 @@ class ImageProcessor:
             print('[INFO] res', res)
             return res
 
-    def cropResultWindow(self, img, boundary):
+    def cropResultWindow_OLD(self, img, boundary):
         print('[INFO] cropResultWindow started')
         h, w = self.fluRefImg.shape
         # img2 = cv.polylines(img,[np.int32(boundary)],True,(255,0,0))
@@ -335,9 +338,139 @@ class ImageProcessor:
         # show_image(transformedImage)
 
         controlLineRect = self.checkControlLine(transformedImage)
-        if (controlLineRect is None or (controlLineRect.w == 0 and controlLineRect.h == 0)):
-            return (0,0)
-        return (controlLineRect.w, controlLineRect.h)
+        ((x, y) , (w, h), angle) = controlLineRect
+        if (controlLineRect is None or (w == 0 and h == 0)):
+            return np.array()
+        #For upright rect
+        # crop_img = transformedImage[int(y): int(y+h),
+        #                 int(x): int(x+ w)].copy()
+        # show_image(crop_img)
+
+        # For rotated rectangle
+        crop_img, rotate_img = crop_rect(transformedImage, controlLineRect)
+        # crop_img = getSubImage(controlLineRect, transformedImage)
+        print('[INFO] crop', crop_img.shape)
+        # show_image(crop_img)
+        return crop_img
+
+    def checkFiducialKMeans(self, img, K=5):
+        print('[INFO] checkFiducialKmeans')
+        img = cv.cvtColor(img, cv.COLOR_RGBA2RGB)
+        data = img.reshape((-1,3))
+        # convert to np.float32
+        data = np.float32(data)
+
+        # define criteria, number of clusters(K) and apply kmeans()
+        criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 1.0)
+        compactness, labels, centers = cv.kmeans(data, K, None, criteria, 10, cv.KMEANS_PP_CENTERS)
+        # TODO: a plot to show how Kmeans work will be nice, sth like a 3D plot
+        # sth like this: https://buzzrobot.com/dominant-colors-in-an-image-using-k-means-clustering-3c7af4622036
+
+        # Now convert back into uint8, and make original image
+        print('[INFO] KMeans shape')
+        print(labels.shape)
+        print(data.shape)
+        print(centers.shape)
+
+        for i in range(data.shape[0]):
+            # print('Iteration: ', i)
+            # int centerId = (int)labels.get(i,0)[0];
+            centerId = int(labels[i][0])
+            data[i][0] = centers[centerId][0]
+
+        data = data.reshape(img.shape)
+        data = data.astype(np.uint8)
+        
+        minCenter = ()
+        minCenterVal = float('inf')
+
+        for center in centers:
+            val = center[0] + center[1] + center[2]
+            if (val < minCenterVal):
+                minCenter = center
+                minCenterVal = val
+
+        print('[INFO] mincenter', minCenter)
+        print('[INFO] mincenterval', minCenterVal)
+
+        thres = 0.299 * minCenter[0] + 0.587 * minCenter[1] + 0.114 * minCenter[2] + 20.0
+        data = cv.cvtColor(data, cv.COLOR_RGB2GRAY)
+        ret,threshold = cv.threshold(data,thres,255,cv.THRESH_BINARY_INV)
+        # show_image(threshold)
+
+
+        kernelErode = np.ones((5,5),np.uint8)
+        kernelDilate = np.ones((20,20), np.uint8)
+
+        threshold = cv.erode(threshold, kernelErode,iterations = 1)
+        threshold = cv.dilate(threshold,kernelDilate,iterations = 1)
+        threshold = cv.GaussianBlur(threshold,(5,5),2, 2)
+        # show_image(threshold)
+        im2, contours, hierarchy = cv.findContours(threshold ,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
+
+        fiducialRects = []
+        fiducialRect = None
+        # cv.drawContours(img, contours, -1, (0,255,0), 3)
+        # show_image(img)
+        
+        for contour in contours:
+            rect = cv.boundingRect(contour)
+            x,y,w,h = rect
+            rectPos = x + w
+            print('[INFO] Loading contour...', rect, rectPos)
+            if (FIDUCIAL_POSITION_MIN < rectPos and rectPos < FIDUCIAL_POSITION_MAX and FIDUCIAL_MIN_HEIGHT < h and FIDUCIAL_MIN_WIDTH < w and w < FIDUCIAL_MAX_WIDTH): 
+                fiducialRects.append(Rect(x,y,w,h))
+                print('[INFO] Found fiducial rect, ', x, y, w, h)
+                # cv.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
+                # show_image(img)
+
+        print('[INFO] fiducialRects', len(fiducialRects))
+        if (len(fiducialRects) == FIDUCIAL_COUNT):
+            center0 = fiducialRects[0].x + fiducialRects[0].w
+            center1 = fiducialRects[0].x + fiducialRects[0].w
+
+            if (len(fiducialRects) > 1):
+                center1 = fiducialRects[1].x + fiducialRects[1].w
+
+            midpoint = int((center0 + center1) / 2)
+            diff = abs(center0 - center1)
+            scale = 1 if FIDUCIAL_DISTANCE == 0 else diff / FIDUCIAL_DISTANCE
+            offset = scale * FIDUCIAL_TO_CONTROL_LINE_OFFSET
+
+            tl = Point(midpoint + offset - RESULT_WINDOW_RECT_HEIGHT * scale / 2.0,
+                        RESULT_WINDOW_RECT_WIDTH_PADDING)
+            br = Point(midpoint + offset + RESULT_WINDOW_RECT_HEIGHT * scale / 2.0,
+                        img.shape[1] - RESULT_WINDOW_RECT_WIDTH_PADDING)
+            img = cv.rectangle(img,(int(tl.x), int(tl.y)),(int(br.x), int(br.y)),(0,255,0),3)
+            print('[INFO] tl, br', tl.x, br.x)
+            # show_image(img)
+            fiducialRect = (tl, br)
+
+        print('[INFO] fiducialRect', fiducialRect)
+        return fiducialRect
+
+    def cropResultWindow(self, img, boundary):
+        print('[INFO] cropResultWindow')
+        h, w = self.fluRefImg.shape
+        # img2 = cv.polylines(img,[np.int32(boundary)],True,(255,0,0))
+        # show_image(img2)
+        refBoundary = np.float32([ [0,0], [0,h-1],[w-1,h-1],[w-1,0]]).reshape(-1,1,2)
+        print('Refboundary', refBoundary)
+        print('Boundary', boundary)
+        M = cv.getPerspectiveTransform(boundary, refBoundary)
+        transformedImage = cv.warpPerspective(img,M, (self.fluRefImg.shape[1], self.fluRefImg.shape[0]))
+        # show_image(transformedImage)
+
+        (tl, br) = self.checkFiducialKMeans(transformedImage)
+        print('[INFO] tl, br', tl.x, tl.y, br.x, br.y)
+        cropResultWindow = transformedImage[int(tl.y): int(br.y), int(tl.x):int(br.x)]
+        print('[INFO] shape', cropResultWindow.shape, transformedImage.shape, img.shape)
+        # show_image(cropResultWindow)
+        # if (cropResultWindow.shape[0] > 0 and cropResultWindow.shape[1] > 0):
+        #     cropResultWindow.reshape((RESULT_WINDOW_RECT_HEIGHT, self.fluRefImg.shape[0] - 2 * RESULT_WINDOW_RECT_WIDTH_PADDING))
+        #     show_image(transformedImage)
+        return cropResultWindow
+
     def checkControlLine(self, img):
         print('[INFO] checkControlLine')
         hls = cv.cvtColor(img, cv.COLOR_RGBA2RGB)
@@ -359,9 +492,9 @@ class ImageProcessor:
         # show_image(im2)
         controlLineRect = None
         for contour in contours:
-            # x,y,w,h = cv.boundingRect(contour)
-            rect = cv.minAreaRect(contour)
-            ((x, y) , (w, h), angle) = rect
+            x,y,w,h = cv.boundingRect(contour)
+            # rect = cv.minAreaRect(contour)
+            # ((x, y) , (w, h), angle) = rect
             print('[INFO] boundingRect', x, y, w, h)
             # TODO: maybe ask CJ should we change the constants control line?s
             # ('[INFO] boundingRect', 1344, 0, 70, 112)
@@ -371,12 +504,97 @@ class ImageProcessor:
                 # cv.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
                 # show_image(img)
                 controlLineRect = Rect(x, y, w, h)
-                box = cv.boxPoints(rect)
-                box = np.int0(box)
-                cv.drawContours(img,[box],0,(0,0,255),2)
-                show_image(img)
+                # DEPRECATED ROTATED RECTANGLE WAY
+                # box = cv.boxPoints(rect)
+                # box = np.int0(box)
+                # cv.drawContours(img,[box],0,(0,0,255),2)
+                # show_image(img)
+
+                # controlLineRect = rect
 
         return controlLineRect
+
+    def enhanceResultWindow(self, controlLineRect, tile):
+        return self.enhanceImage(controlLineRect, tile)
+
+    def enhanceImage(self, img, tile):
+        print('[INFO] enhanceImage')
+        # show_image(img)
+        result = cv.cvtColor(img, cv.COLOR_RGBA2RGB)
+        result = cv.cvtColor(result, cv.COLOR_RGB2HLS)
+         # create a CLAHE object (Arguments are optional).
+        clahe = cv.createCLAHE(clipLimit=10.0, tileGridSize=tile)
+        channels = cv.split(result)
+        cv.normalize(channels[1], channels[1], alpha=0, beta=255, norm_type=cv.NORM_MINMAX)
+        cl1 = clahe.apply(channels[1])
+        channels[1] = cl1
+        result = cv.merge(channels)
+        result = cv.cvtColor(img, cv.COLOR_HLS2RGB)
+        # result = cv.cvtColor(img, cv.RGB2RGBA)
+        # show_image(result)
+        return result 
+
+    def readLine(self, img, position, isControlLine):
+        print('[INFO] readLine started')
+        """
+                Mat hls = new Mat();
+        cvtColor(inputMat, hls, Imgproc.COLOR_RGBA2RGB);
+        cvtColor(hls, hls, Imgproc.COLOR_RGB2HLS);
+
+        List<Mat> channels = new ArrayList<>();
+        Core.split(hls, channels);
+
+        int lower_bound = (int)(position.x-LINE_SEARCH_WIDTH < 0 ? 0 : position.x-LINE_SEARCH_WIDTH);
+        int upper_bound = (int)(position.x+LINE_SEARCH_WIDTH);
+        upper_bound = upper_bound > channels.get(1).cols() ? channels.get(1).cols() : upper_bound;
+
+        float[] avgIntensities = new float[upper_bound-lower_bound];
+        float[] avgHues = new float[upper_bound-lower_bound];
+        float[] avgSats = new float[upper_bound-lower_bound];
+
+        float min = Float.MAX_VALUE, max = Float.MIN_VALUE;
+        int minIndex, maxIndex;
+
+        for (int i = lower_bound; i < upper_bound; i++) {
+            float sumIntensity=0;
+            float sumHue=0;
+            float sumSat=0;
+            for (int j = 0; j < channels.get(1).rows(); j++) {
+                sumIntensity+=channels.get(1).get(j, i)[0];
+                sumHue+=channels.get(0).get(j, i)[0];
+                sumSat+=channels.get(2).get(j, i)[0];
+            }
+            avgIntensities[i-lower_bound] = sumIntensity/channels.get(1).rows();
+            avgHues[i-lower_bound] = sumHue/channels.get(0).rows();
+            avgSats[i-lower_bound] = sumSat/channels.get(2).rows();
+
+            if (avgIntensities[i-lower_bound] < min) {
+                min = avgIntensities[i-lower_bound];
+                minIndex = i-lower_bound;
+            }
+
+            if (avgIntensities[i-lower_bound] > max) {
+                max = avgIntensities[i-lower_bound];
+                maxIndex = i-lower_bound;
+            }
+        }
+
+        if (isControlLine) {
+            return min < INTENSITY_THRESHOLD && abs(min-max) > CONTROL_INTENSITY_PEAK_THRESHOLD;
+        } else {
+            return min < INTENSITY_THRESHOLD && abs(min-max) > TEST_INTENSITY_PEAK_THRESHOLD;
+        }
+        """
+
+    def readControlLine(self, img, controlLinePosition):
+        print('[INFO] readControlLine')
+        show_image(img)
+        return self.readLine(img, controlLinePosition, True)
+
+    def readTestLine(self, img, testLinePosition):
+        print('[INFO] readTestLine')
+        return self.readLine(img, testLinePosition, False)
+
 
     def interpretResult(self, src):
         print('[INFO] interpretResult')
@@ -408,15 +626,15 @@ class ImageProcessor:
         print('Imgshep', img.shape)
         print('boundary', boundary)
         result = self.cropResultWindow(colorImg, boundary)
+        # print('[INFO] cropResultWindow res:', result)
         control, testA, testB = False, False, False
 
-        if (result[0] == 0 and result[1] == 0):
+        if (result.shape[0] == 0 and result.shape[1] == 0):
             return InterpretationResult(result, False, False, False)
-        
         result = self.enhanceResultWindow(result, (5, result.shape[1]))
         # result = self.correctGamma(result, 0.75)
         # TODO: do we need to do correct Gamma?
 
         control = self.readControlLine(result, Point(CONTROL_LINE_POSITION, 0))
         testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
-        testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION))
+        testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
