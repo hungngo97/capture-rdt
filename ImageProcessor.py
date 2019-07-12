@@ -12,7 +12,9 @@ from constants import (OVER_EXP_THRESHOLD, UNDER_EXP_THRESHOLD, OVER_EXP_WHITE_C
                        CONTROL_LINE_MAX_WIDTH, FIDUCIAL_MAX_WIDTH, FIDUCIAL_MIN_HEIGHT, FIDUCIAL_MIN_WIDTH,
                        FIDUCIAL_POSITION_MAX, FIDUCIAL_POSITION_MIN, FIDUCIAL_TO_CONTROL_LINE_OFFSET,
                        RESULT_WINDOW_RECT_HEIGHT, RESULT_WINDOW_RECT_WIDTH_PADDING, FIDUCIAL_COUNT,
-                       FIDUCIAL_DISTANCE, ANGLE_THRESHOLD)
+                       FIDUCIAL_DISTANCE, ANGLE_THRESHOLD, LINE_SEARCH_WIDTH, CONTROL_LINE_POSITION, 
+                       TEST_A_LINE_POSITION, TEST_B_LINE_POSITION, INTENSITY_THRESHOLD, 
+                       CONTROL_INTENSITY_PEAK_THRESHOLD, TEST_INTENSITY_PEAK_THRESHOLD)
 from result import (ExposureResult, CaptureResult, InterpretationResult, SizeResult)
 from utils import (show_image, resize_image, Point, Rect, crop_rect)
 
@@ -191,7 +193,7 @@ class ImageProcessor:
                    matchesMask = matchesMask, # draw only inliers
                    flags = 2)
         img3 = cv.drawMatches(self.fluRefImg,self.refSiftKeyPoints,img2,keypoints,good,None,**draw_params)
-        # plt.imshow(img3, 'gray'),plt.show()
+        plt.imshow(img3, 'gray'),plt.show()
         return dst 
 
 
@@ -409,7 +411,7 @@ class ImageProcessor:
         im2, contours, hierarchy = cv.findContours(threshold ,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
 
         fiducialRects = []
-        fiducialRect = None
+        fiducialRect = (None, None)
         # cv.drawContours(img, contours, -1, (0,255,0), 3)
         # show_image(img)
         
@@ -536,59 +538,46 @@ class ImageProcessor:
 
     def readLine(self, img, position, isControlLine):
         print('[INFO] readLine started')
-        """
-                Mat hls = new Mat();
-        cvtColor(inputMat, hls, Imgproc.COLOR_RGBA2RGB);
-        cvtColor(hls, hls, Imgproc.COLOR_RGB2HLS);
+        # TODO: finish this readline method
+        # show_image(img)
+        hls = cv.cvtColor(img, cv.COLOR_RGBA2RGB)
+        hls = cv.cvtColor(img, cv.COLOR_RGB2HLS)
 
-        List<Mat> channels = new ArrayList<>();
-        Core.split(hls, channels);
+        channels = cv.split(hls)
+        lower_bound = int(0 if position.x - LINE_SEARCH_WIDTH < 0 else position.x - LINE_SEARCH_WIDTH)
+        upper_bound = int(position.x + LINE_SEARCH_WIDTH)
 
-        int lower_bound = (int)(position.x-LINE_SEARCH_WIDTH < 0 ? 0 : position.x-LINE_SEARCH_WIDTH);
-        int upper_bound = (int)(position.x+LINE_SEARCH_WIDTH);
-        upper_bound = upper_bound > channels.get(1).cols() ? channels.get(1).cols() : upper_bound;
+        avgIntensities = [None] * (upper_bound - lower_bound)
+        avgHues = [None] * (upper_bound - lower_bound)
+        avgSats = [None] * (upper_bound - lower_bound)
 
-        float[] avgIntensities = new float[upper_bound-lower_bound];
-        float[] avgHues = new float[upper_bound-lower_bound];
-        float[] avgSats = new float[upper_bound-lower_bound];
+        min = float('inf')
+        max = float('-inf')
+        minIndex, maxIndex = 0,0
 
-        float min = Float.MAX_VALUE, max = Float.MIN_VALUE;
-        int minIndex, maxIndex;
-
-        for (int i = lower_bound; i < upper_bound; i++) {
-            float sumIntensity=0;
-            float sumHue=0;
-            float sumSat=0;
-            for (int j = 0; j < channels.get(1).rows(); j++) {
-                sumIntensity+=channels.get(1).get(j, i)[0];
-                sumHue+=channels.get(0).get(j, i)[0];
-                sumSat+=channels.get(2).get(j, i)[0];
-            }
-            avgIntensities[i-lower_bound] = sumIntensity/channels.get(1).rows();
-            avgHues[i-lower_bound] = sumHue/channels.get(0).rows();
-            avgSats[i-lower_bound] = sumSat/channels.get(2).rows();
-
-            if (avgIntensities[i-lower_bound] < min) {
-                min = avgIntensities[i-lower_bound];
-                minIndex = i-lower_bound;
-            }
-
-            if (avgIntensities[i-lower_bound] > max) {
-                max = avgIntensities[i-lower_bound];
-                maxIndex = i-lower_bound;
-            }
-        }
-
-        if (isControlLine) {
-            return min < INTENSITY_THRESHOLD && abs(min-max) > CONTROL_INTENSITY_PEAK_THRESHOLD;
-        } else {
-            return min < INTENSITY_THRESHOLD && abs(min-max) > TEST_INTENSITY_PEAK_THRESHOLD;
-        }
-        """
+        # print('[INFO] hls shape', hls.shape, channels[1].shape)
+        for i in range(lower_bound, upper_bound):
+            sumIntensity, sumHue, sumSat = 0,0,0
+            for j in range(channels[1].shape[0]):
+                sumIntensity += channels[1][j][i]
+                sumHue += channels[0][j][i]
+                sumSat += channels[2][j][i]
+            avgIntensities[i - lower_bound] = sumIntensity / channels[1].shape[0]
+            avgHues[i - lower_bound] = sumHue / channels[0].shape[0]
+            avgSats[i - lower_bound] = sumSat / channels[2].shape[0]
+            if (avgIntensities[i - lower_bound] < min):
+                min = avgIntensities[i - lower_bound]
+                minIndex = i - lower_bound
+            if (avgIntensities[i - lower_bound] > max):
+                max = avgIntensities[i - lower_bound]
+                maxIndex = i - lower_bound
+        print('[INFO] min max threshold', min, max, abs(min - max))
+        if (isControlLine):
+            return min < INTENSITY_THRESHOLD and abs(min - max) > CONTROL_INTENSITY_PEAK_THRESHOLD
+        return min < INTENSITY_THRESHOLD and abs(min - max) > TEST_INTENSITY_PEAK_THRESHOLD
 
     def readControlLine(self, img, controlLinePosition):
         print('[INFO] readControlLine')
-        show_image(img)
         return self.readLine(img, controlLinePosition, True)
 
     def readTestLine(self, img, testLinePosition):
@@ -638,3 +627,6 @@ class ImageProcessor:
         control = self.readControlLine(result, Point(CONTROL_LINE_POSITION, 0))
         testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
         testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
+        print('[INFO] lines result', control, testA, testB)
+        show_image(result)
+        return InterpretationResult(result, control, testA, testB)
