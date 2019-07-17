@@ -412,6 +412,7 @@ class ImageProcessor:
 
         fiducialRects = []
         fiducialRect = (None, None)
+        # show_image(img)
         # cv.drawContours(img, contours, -1, (0,255,0), 3)
         # show_image(img)
         
@@ -425,7 +426,9 @@ class ImageProcessor:
                 print('[INFO] Found fiducial rect, ', x, y, w, h)
                 # cv.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
                 # show_image(img)
-
+        # There are some edge cases like the arrows on the right get recognized as 2 or 3 small arrows,
+        # Therefore it can lead to fiducialRect > 2, but what we can do is sort them and take the average
+        # between the 2 components (like the upper fiducial mean x and lower fiducial mean x)
         print('[INFO] fiducialRects', len(fiducialRects))
         if (len(fiducialRects) == FIDUCIAL_COUNT):
             center0 = fiducialRects[0].x + fiducialRects[0].w
@@ -628,5 +631,6 @@ class ImageProcessor:
         testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
         testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
         print('[INFO] lines result', control, testA, testB)
-        show_image(result)
+        # show_image(result)
+        cv.imwrite('result.png', result)
         return InterpretationResult(result, control, testA, testB)

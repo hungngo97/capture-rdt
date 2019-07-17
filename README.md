@@ -13,6 +13,7 @@
 ## Install
 
 ```sh
+#Need to have Python installed on computer before, check Python documentation for detail
 brew install opencv
 pip install numpy matplotlib
 pip install opencv-python opencv-contrib-python
@@ -21,7 +22,12 @@ pip install opencv-python opencv-contrib-python
 ## Usage
 
 ```sh
+#To run the core Image processing algorithm on the CLI
 python main.py
+
+#To run desktop GUI application
+python gui.py
+
 ```
 
 ## Author
