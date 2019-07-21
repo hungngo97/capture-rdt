@@ -4,14 +4,7 @@ from PIL import Image
 from PIL import ImageTk
 import tkFileDialog
 import cv2
-# check: https://pythonprogramming.net/how-to-embed-matplotlib-graph-tkinter-gui/
-# from ImageProcessor import ImageProcessor
 import subprocess
-
-# MPLBACKEND = "TkAgg"
-# INPUT_IMAGE = 'input/testimg8_1.jpg'
-
-# imgProc = ImageProcessor(INPUT_IMAGE)
 
 
 def resize_image(img, gray=True, scale_percent=400):
@@ -26,15 +19,12 @@ def resize_image(img, gray=True, scale_percent=400):
 def select_image():
 
     # grab a reference to the image panels
-    global panelA, panelB
+    global panelA, panelB, croppedPanel
 
     # open a file chooser dialog and allow the user to select an input
     # image
     path = tkFileDialog.askopenfilename()
     # ensure a file path was selected
-    # imgProc = ImageProcessor(path)
-    # # imgProc.captureRDT(INPUT_IMAGE)
-    # imgProc.interpretResult(path)
     done = False
 
     if len(path) > 0:
@@ -58,13 +48,19 @@ def select_image():
         image = ImageTk.PhotoImage(image)
         edged = ImageTk.PhotoImage(edged)
         # if the panels are None, initialize them
-        subprocess.call("python main.py", shell=True)
+        subprocess.call("python main.py --f " + str(path), shell=True)
         # Read image from directory
         edged = cv2.imread('result.png', cv2.IMREAD_UNCHANGED)
         edged = cv2.cvtColor(edged, cv2.COLOR_BGR2RGB)
-        edged = resize_image(edged, False, 40)
+        edged = resize_image(edged, False, 70)
         edged = Image.fromarray(edged)
         edged = ImageTk.PhotoImage(edged)
+
+        cropped = cv2.imread('cropResult.png', cv2.IMREAD_UNCHANGED)
+        print('[INFO] cropped shape', cropped.shape)
+        cropped = cv2.cvtColor(cropped, cv2.COLOR_BGR2RGB)
+        cropped = Image.fromarray(cropped)
+        cropped = ImageTk.PhotoImage(cropped)
 
         # And then display
         if panelA is None or panelB is None:
@@ -73,24 +69,41 @@ def select_image():
             panelA.image = image
             panelA.pack(side="top", padx=10, pady=10)
 
+            textLabel1 = Label(text="Original Image" + str(path))
+            textLabel1.pack(side="top")
+
+            # the first panel will store our original image
+            croppedPanel = Label(image=cropped)
+            croppedPanel.image = cropped
+            croppedPanel.pack(side="top", padx=10, pady=10)
+
+            textLabel3 = Label(text="Cropped Image")
+            textLabel3.pack(side="top")
+
             # while the second panel will store the edge map
             panelB = Label(image=edged)
             panelB.image = edged
             panelB.pack(side="bottom", padx=10, pady=10)
+
+            textLabel2 = Label(text="Result Image")
+            textLabel2.pack(side="top")
 
         # otherwise, update the image panels
         else:
             # update the pannels
             panelA.configure(image=image)
             panelB.configure(image=edged)
+            croppedPanel.configure(image=cropped)
             panelA.image = image
             panelB.image = edged
+            croppedPanel.image = cropped
 
 
 # initialize the window toolkit along with the two image panels
 root = Tk()
 panelA = None
 panelB = None
+croppedPanel = None
 
 # create a button, then when pressed, will trigger a file chooser
 # dialog and allow the user to select an input image; then add the

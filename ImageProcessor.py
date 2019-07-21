@@ -193,7 +193,7 @@ class ImageProcessor:
                    matchesMask = matchesMask, # draw only inliers
                    flags = 2)
         img3 = cv.drawMatches(self.fluRefImg,self.refSiftKeyPoints,img2,keypoints,good,None,**draw_params)
-        plt.imshow(img3, 'gray'),plt.show()
+        # plt.imshow(img3, 'gray'),plt.show()
         return dst 
 
 
@@ -618,6 +618,7 @@ class ImageProcessor:
         print('Imgshep', img.shape)
         print('boundary', boundary)
         result = self.cropResultWindow(colorImg, boundary)
+        cv.imwrite('cropResult.png', result)
         # print('[INFO] cropResultWindow res:', result)
         control, testA, testB = False, False, False
 
