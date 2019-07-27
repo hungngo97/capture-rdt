@@ -11,7 +11,7 @@ SECRET_PATH = 'keys/cough_photos_key.txt'
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--barcodes', type=str,
+    parser.add_argument('--barcodes', type=str, default='input/barcodes.txt',
                         help='URLs image path')
     # This url passed in should be a list of url ( like a text file)
     args = parser.parse_args()
