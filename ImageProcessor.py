@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 import enum
 import time
 from constants import (OVER_EXP_THRESHOLD, UNDER_EXP_THRESHOLD, OVER_EXP_WHITE_COUNT,
@@ -177,6 +178,8 @@ class ImageProcessor:
             matchesMask = mask.ravel().tolist()
             h,w = self.fluRefImg.shape
             pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
+            if M is None or M.size == 0:
+                return None
             dst = cv.perspectiveTransform(pts,M)
             print('[INFO] dst transformation pts', dst)
             img2 = cv.polylines(img,[np.int32(dst)],True,(255,0,0))
@@ -305,27 +308,27 @@ class ImageProcessor:
 
         if (exposureResult == ExposureResult.NORMAL and isSharp):
             boundary = self.detectRDT(img)
-            isCentered = False
-            sizeResult = SizeResult.INVALID
-            isRightOrientation = False
-            angle = 0.0
-            w, h = self.getBoundarySize(boundary)
-            print('[INFO] width, height of boundary', w, h)
+            if boundary is not None:
+                isCentered = False
+                sizeResult = SizeResult.INVALID
+                isRightOrientation = False
+                angle = 0.0
+                w, h = self.getBoundarySize(boundary)
+                print('[INFO] width, height of boundary', w, h)
 
-            if (w > 0 and h > 0):
-                isCentered = self.checkIfCentered(boundary, img.shape, img)
-                sizeResult = self.checkSize(boundary, img.shape)
-                isRightOrientation = self.checkOrientation(boundary)
-                angle = self.measureOrientation(boundary)
-            passed = sizeResult == SizeResult.RIGHT_SIZE and isCentered and isRightOrientation
-            # TODO: what does the cropRDT do? do we even need that?
-            res = CaptureResult(passed, img, -1 , exposureResult, sizeResult, isCentered, isRightOrientation, isSharp, False, angle)
-            print('[INFO] res', res)
-            return res
-        else:
-            res = CaptureResult(passed, None, -1 , exposureResult, SizeResult.INVALID, False, False, isSharp, False, 0.0)
-            print('[INFO] res', res)
-            return res
+                if (w > 0 and h > 0):
+                    isCentered = self.checkIfCentered(boundary, img.shape, img)
+                    sizeResult = self.checkSize(boundary, img.shape)
+                    isRightOrientation = self.checkOrientation(boundary)
+                    angle = self.measureOrientation(boundary)
+                passed = sizeResult == SizeResult.RIGHT_SIZE and isCentered and isRightOrientation
+                # TODO: what does the cropRDT do? do we even need that?
+                res = CaptureResult(passed, img, -1 , exposureResult, sizeResult, isCentered, isRightOrientation, isSharp, False, angle)
+                print('[INFO] res', res)
+                return res
+        res = CaptureResult(False, None, -1 , exposureResult, SizeResult.INVALID, False, False, isSharp, False, 0.0)
+        print('[INFO] res', res)
+        return res
 
     def cropResultWindow_OLD(self, img, boundary):
         print('[INFO] cropResultWindow started')
@@ -606,6 +609,8 @@ class ImageProcessor:
         while (not(isSizeable == SizeResult.RIGHT_SIZE and isCentered and isUpright) and cnt < 4):
             cnt += 1
             boundary = self.detectRDT(img, cnt)
+            if boundary is None:
+                return None
             print('[SIFT boundary size]: ', boundary.shape)
             isSizeable = self.checkSize(boundary, img.shape)
             isCentered = self.checkIfCentered(boundary, img.shape, img)
@@ -617,21 +622,28 @@ class ImageProcessor:
         print('flurefimgshp,', self.fluRefImg.shape)
         print('Imgshep', img.shape)
         print('boundary', boundary)
-        result = self.cropResultWindow(colorImg, boundary)
-        cv.imwrite('cropResult.png', result)
-        # print('[INFO] cropResultWindow res:', result)
-        control, testA, testB = False, False, False
+        try:
+            result = self.cropResultWindow(colorImg, boundary)
+            cv.imwrite('cropResult.png', result)
+            # print('[INFO] cropResultWindow res:', result)
+            control, testA, testB = False, False, False
 
-        if (result.shape[0] == 0 and result.shape[1] == 0):
-            return InterpretationResult(result, False, False, False)
-        result = self.enhanceResultWindow(result, (5, result.shape[1]))
-        # result = self.correctGamma(result, 0.75)
-        # TODO: do we need to do correct Gamma?
+            if (result.shape[0] == 0 and result.shape[1] == 0):
+                return InterpretationResult(result, False, False, False)
+            result = self.enhanceResultWindow(result, (5, result.shape[1]))
+            # result = self.correctGamma(result, 0.75)
+            # TODO: do we need to do correct Gamma?
 
-        control = self.readControlLine(result, Point(CONTROL_LINE_POSITION, 0))
-        testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
-        testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
-        print('[INFO] lines result', control, testA, testB)
-        # show_image(result)
-        cv.imwrite('result.png', result)
-        return InterpretationResult(result, control, testA, testB)
+            control = self.readControlLine(result, Point(CONTROL_LINE_POSITION, 0))
+            testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
+            testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
+            print('[INFO] lines result', control, testA, testB)
+            # show_image(result)
+            cv.imwrite('result.png', result)
+            with open('interpretResult.txt', 'w') as file:
+                file.write(str(InterpretationResult(result, control, testA, testB))) 
+            return InterpretationResult(result, control, testA, testB)
+        except: 
+            # Not detected found
+            print("Something went wrong")
+            return None

@@ -69,7 +69,7 @@ def select_image():
             panelA.image = image
             panelA.pack(side="top", padx=10, pady=10)
 
-            textLabel1 = Label(text="Original Image" + str(path))
+            textLabel1 = Label(text="Original Image \n" + str(path))
             textLabel1.pack(side="top")
 
             # the first panel will store our original image
@@ -83,10 +83,17 @@ def select_image():
             # while the second panel will store the edge map
             panelB = Label(image=edged)
             panelB.image = edged
-            panelB.pack(side="bottom", padx=10, pady=10)
+            panelB.pack(side="top", padx=10, pady=10)
 
             textLabel2 = Label(text="Result Image")
             textLabel2.pack(side="top")
+
+            interpretResult = ""
+            with open('interpretResult.txt', 'r') as file:
+                interpretResult = file.read()
+
+            textLabel4 = Label(text=interpretResult)
+            textLabel4.pack(side="top")
 
         # otherwise, update the image panels
         else:

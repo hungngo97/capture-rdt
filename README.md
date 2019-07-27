@@ -19,14 +19,19 @@ pip install numpy matplotlib
 pip install opencv-python opencv-contrib-python
 ```
 
+To run the scraping script to store images on S3 storage, you need to provided a `cough_photos_key.txt` under
+keys folder
+
 ## Usage
 
 ```sh
 #To run the core Image processing algorithm on the CLI
 python main.py
 
-#To run desktop GUI application
+#To run desktop GUI application for testing the output images of RDT
 python gui.py
+
+
 
 ```
 

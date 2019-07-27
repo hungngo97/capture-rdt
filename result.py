@@ -39,6 +39,12 @@ class InterpretationResult():
         self.testA = testA
         self.testB = testB
 
+    def __str__(self):
+        return 'InterpretResult(Control Line: %s, Test A: %s, TestB: %s)' % (self.control, self.testA, self.testB)
+
+    def __repr__(self):
+        return 'InterpretResult(Control Line: %s, Test A: %s, TestB: %s)' % (self.control, self.testA, self.testB)
+
 
 class SizeResult(enum.Enum):
     RIGHT_SIZE = 0

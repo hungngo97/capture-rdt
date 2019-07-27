@@ -1,5 +1,12 @@
 import cv2 as cv
 import numpy as np
+import os
+
+FILES_TO_DELETE = [
+    'cropResult.png',
+    'result.png',
+    'interpretResult.txt'
+]
 
 
 def show_image(img, title="Example"):
@@ -43,6 +50,11 @@ def crop_rect(img, rect):
     img_crop = cv.getRectSubPix(img_rot, size, center)
 
     return img_crop, img_rot
+
+
+def clear_files():
+    for filename in FILES_TO_DELETE:
+        os.remove(filename)
 
 
 class Point():

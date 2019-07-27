@@ -1,1 +1,5 @@
 *.pyc
+*.txt
+.vscode
+keys/cough_photos_key.txt
+Detection/
