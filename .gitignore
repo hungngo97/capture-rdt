@@ -3,3 +3,5 @@
 .vscode
 keys/cough_photos_key.txt
 Detection/
+cropResult.png
+result.png

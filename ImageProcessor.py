@@ -20,12 +20,7 @@ from result import (ExposureResult, CaptureResult, InterpretationResult, SizeRes
 from utils import (show_image, resize_image, Point, Rect, crop_rect)
 
 class ImageProcessor:
-    def __init__(self, src):
-        self.src = src
-        self.img = cv.imread(src, cv.IMREAD_GRAYSCALE)
-        width, height = self.img.shape
-        self.height = height
-        self.width = width
+    def __init__(self):
         self.featureDetector = cv.BRISK_create(45, 4, 1)
         self.matcher = cv.BFMatcher(cv.NORM_L1, crossCheck=False)
         # Load reference image for Quickvue flu test strip
@@ -73,14 +68,14 @@ class ImageProcessor:
             return ExposureResult.UNDER_EXPOSED
         return ExposureResult.NORMAL
 
-    def calculateBrightness(self, src):
+    def calculateBrightness(self, img):
         histSizeNum = 256
         histSize = 256
         histRange = (0, 256)  # the upper boundary is exclusive
         accumulate = False
-        width, height = src.shape
+        width, height = img.shape
 
-        hist = cv.calcHist([self.img], [0], None, [256], [0, 256])
+        hist = cv.calcHist([img], [0], None, [256], [0, 256])
         hist_h = 400
         cv.normalize(hist, hist, alpha=height/2, beta=0,
                      norm_type=cv.NORM_INF)
@@ -295,6 +290,11 @@ class ImageProcessor:
         return angle
 
     def captureRDT(self, src):
+        self.src = src
+        self.img = cv.imread(src, cv.IMREAD_GRAYSCALE)
+        width, height = self.img.shape
+        self.height = height
+        self.width = width
         img = cv.imread(src, cv.IMREAD_GRAYSCALE)
         # Check brightness
         exposureResult = (self.checkBrightness(img))
@@ -593,6 +593,11 @@ class ImageProcessor:
 
     def interpretResult(self, src):
         print('[INFO] interpretResult')
+        self.src = src
+        self.img = cv.imread(src, cv.IMREAD_GRAYSCALE)
+        width, height = self.img.shape
+        self.height = height
+        self.width = width
         # colorImg = cv.imread(src, cv.IMREAD_COLOR)
         colorImg = cv.imread(src, cv.COLOR_BGR2RGB)
         img = cv.imread(src, cv.IMREAD_GRAYSCALE)

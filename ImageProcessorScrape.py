@@ -35,7 +35,7 @@ Detection
         - FluB
         - FluAB
         - noFlu
-- False (edited) 
+- False (edited)
 
 """
 
@@ -52,9 +52,8 @@ CANNOT_DETECT = 'CANNOT_DETECT'
 
 
 class ImageProcessorScrape(ImageProcessor):
-    def __init__(self, url):
-        ImageProcessor.__init__(self, 'input/testimg8_1.jpg')
-        self.url = url
+    def __init__(self):
+        ImageProcessor.__init__(self)
 
     def storeEnhancedScan(self, imageFileName, barcode):
         paths = [

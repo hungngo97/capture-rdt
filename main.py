@@ -5,17 +5,13 @@ import sys
 # # 4.1 doesnot work well because the arrow got cut in half
 # # 10.1 doesnot work well
 
-# imgProc = ImageProcessor(INPUT_IMAGE)
-# # imgProc.captureRDT(INPUT_IMAGE)
-# imgProc.interpretResult(INPUT_IMAGE)
-
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--f', type=str, default='input/testimg8_1.jpg',
+    parser.add_argument('--f', type=str,
                         help='RDT image file path')
     args = parser.parse_args()
-    imgProc = ImageProcessor(args.f)
+    imgProc = ImageProcessor()
     # imgProc.captureRDT(INPUT_IMAGE)
     imgProc.interpretResult(args.f)
 

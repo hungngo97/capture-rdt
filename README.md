@@ -31,7 +31,8 @@ python main.py
 #To run desktop GUI application for testing the output images of RDT
 python gui.py
 
-
+# To run scraping functions, provide a path to the barcodes txt file
+python scrape.py --barcodes input/barcodes.txt
 
 ```
 

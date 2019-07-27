@@ -6,19 +6,21 @@ from urlConstants import (
     S3_URL_BASE_PATH, TYPE, BARCODES, RDT_SCAN, ENHANCED_SCAN, MANUAL_PHOTO
 )
 
+SECRET_PATH = 'keys/cough_photos_key.txt'
+
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--url', type=str,
+    parser.add_argument('--barcodes', type=str,
                         help='URLs image path')
     # This url passed in should be a list of url ( like a text file)
     args = parser.parse_args()
-    imgProc = ImageProcessorScrape(args.url)
+    imgProc = ImageProcessorScrape()
     SECRET = ""
-    with open('keys/cough_photos_key.txt', 'r') as file:
+    with open(SECRET_PATH, 'r') as file:
         SECRET = file.read()
     barcodes = []
-    with open('input/barcodes.txt', 'r') as file:
+    with open(args.barcodes, 'r') as file:
         barcodes = file.read().split(",")
     for barcode in barcodes:
         for imageType in [RDT_SCAN, MANUAL_PHOTO, ENHANCED_SCAN]:
