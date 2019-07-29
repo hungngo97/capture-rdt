@@ -1,5 +1,6 @@
 *.pyc
-*.txt
+file.txt
+input/*.txt
 .vscode
 keys/cough_photos_key.txt
 Detection/

@@ -17,6 +17,10 @@
 brew install opencv
 pip install numpy matplotlib
 pip install opencv-python opencv-contrib-python
+
+or 
+
+pip install --user --requirement requirements.txt
 ```
 
 To run the scraping script to store images on S3 storage, you need to provided a `cough_photos_key.txt` under
