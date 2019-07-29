@@ -23,9 +23,9 @@ def main():
     with open(args.barcodes, 'r') as file:
         barcodes = file.read().split(",")
     for barcode in barcodes:
-        for imageType in [RDT_SCAN, MANUAL_PHOTO, ENHANCED_SCAN]:
+        for imageType in [RDT_SCAN, MANUAL_PHOTO]:
             URL_PATH = str(S3_URL_BASE_PATH) + \
-                str(SECRET) + '/cough/' + str(barcode) + imageType + '.png'
+                str(SECRET) + '/cough/' + str(barcode)
             print('[INFO] current URL path', URL_PATH)
             imgProc.interpretResultFromURL(URL_PATH, URL_PATH)
     # imgProc.captureRDT(INPUT_IMAGE)
