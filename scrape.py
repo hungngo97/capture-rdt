@@ -30,6 +30,11 @@ def main():
             imgProc.interpretResultFromURL(URL_PATH, URL_PATH)
     # imgProc.captureRDT(INPUT_IMAGE)
     # TODO: add multiprocessing here to parallelize
+    """
+    import multiprocessing
+    pool = multiprocessing.Pool()
+    pool.map(function_x, list_of_files)
+    """
 
 
 if __name__ == '__main__':

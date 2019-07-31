@@ -61,7 +61,7 @@ class ImageProcessorScrape(ImageProcessor):
         if (imageFileName == 'NOT_FOUND'):
             print('[INFO] No enhanced scan for this image..')
             return None
-        copyfile(imageFileName, dst)
+        copyfile(imageFileName, dst + '/' + imageFileName)
         os.remove(imageFileName)
 
     def interpretResultFromURL(self, baseURL, barcode):
