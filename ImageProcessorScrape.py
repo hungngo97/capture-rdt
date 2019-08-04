@@ -69,7 +69,8 @@ class ImageProcessorScrape(ImageProcessor):
         # Preprocessing
         for imageType in [RDT_SCAN, MANUAL_PHOTO]:
             url = baseURL + imageType + '.png'
-            imageFileName = readImageFromURL(url)
+            imageFileName = readImageFromURL(
+                url, isManualPhoto=(imageType == MANUAL_PHOTO))
             if (imageFileName == 'NOT_FOUND'):
                 print('[INFO] URL invalid..')
                 return None

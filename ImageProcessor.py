@@ -89,8 +89,8 @@ class ImageProcessor:
 
     def getViewfinderRect(self, img):
         width, height = img.shape
-        p1 = (int(width * (1 - VIEW_FINDER_SCALE_H)/2),
-              int(height * (1 - VIEW_FINDER_SCALE_W) / 2))
+        p1 = (int(width * (1 - VIEW_FINDER_SCALE_W)/2) * 0.9,
+              int(height * (1 - VIEW_FINDER_SCALE_H) / 2))
         p2 = (int(width - p1[0]), int(height - p1[1]))
         return (p1, p2)
 
@@ -123,12 +123,21 @@ class ImageProcessor:
     def detectRDT(self, img, cnt=5):
         print('[INFO] start detectRDT')
         startTime = time.time()
-        # show_image(img)
         width, height = img.shape
-        p1 = (0, int(height * (1 - VIEW_FINDER_SCALE_W / CROP_RATIO) / 2))
+        # p1 = (0, int(height * (1 - VIEW_FINDER_SCALE_W / CROP_RATIO) / 2))
+        # p2 = (int(width - p1[0]), int(height - p1[1]))
+
+        p1 = (int(width * (1 - VIEW_FINDER_SCALE_W)/2 * CROP_RATIO) , int(height * (1 - VIEW_FINDER_SCALE_H) / 2))
         p2 = (int(width - p1[0]), int(height - p1[1]))
-        keypoints, descriptors = self.siftDetector.detectAndCompute(img, None)
-        # keypoints, descriptors = self.siftDetector.detectAndCompute(img, mask)
+        roi = img[p1[0]:p2[0], p1[1]:p2[1]]
+        # img = roi
+        mask = np.zeros((width, height), np.uint8)
+        mask[p1[0]:p2[0], p1[1]: p2[1]] = 255
+        # show_image(img)
+        # show_image(roi)
+        # keypoints, descriptors = self.siftDetector.detectAndCompute(img, None)
+        show_image(mask)
+        keypoints, descriptors = self.siftDetector.detectAndCompute(img, mask)
         print('[INFO] detect/compute time: ', time.time() - startTime)
         print('[INFO] descriptors')
         print(descriptors)
@@ -164,11 +173,11 @@ class ImageProcessor:
         if len(good)> MIN_MATCH_COUNT:
             src_pts = np.float32([ self.refSiftKeyPoints[m.queryIdx].pt for m in good ]).reshape(-1,1,2)
             dst_pts = np.float32([ keypoints[m.trainIdx].pt for m in good ]).reshape(-1,1,2)
-            print('src_pts', src_pts)
-            print('dst_pst', dst_pts)
+            # print('src_pts', src_pts)
+            # print('dst_pst', dst_pts)
             M, mask = cv.findHomography(src_pts, dst_pts, cv.RANSAC, cnt)
             print('[INFO] Finish finding Homography')
-            print('[INFO] M Matrix', M)
+            # print('[INFO] M Matrix', M)
             # print('[INFO] mask', mask)
             matchesMask = mask.ravel().tolist()
             h,w = self.fluRefImg.shape
@@ -179,8 +188,8 @@ class ImageProcessor:
             print('[INFO] dst transformation pts', dst)
             img2 = cv.polylines(img,[np.int32(dst)],True,(255,0,0))
             print('[INFO] finish perspective transform')
-            # plt.imshow(img2)
-            # plt.show()
+            # show_image(roi)
+            # show_image(img2)
         else:
             print( "Not enough matches are found - {}/{}".format(len(good), MIN_MATCH_COUNT) )
             matchesMask = None
@@ -191,7 +200,17 @@ class ImageProcessor:
                    matchesMask = matchesMask, # draw only inliers
                    flags = 2)
         img3 = cv.drawMatches(self.fluRefImg,self.refSiftKeyPoints,img2,keypoints,good,None,**draw_params)
-        # plt.imshow(img3, 'gray'),plt.show()
+        plt.imshow(img3, 'gray'),plt.show()
+
+        h, w  = self.fluRefImg.shape
+        refBoundary = np.float32([ [0,0], [0,h-1],[w-1,h-1],[w-1,0]]).reshape(-1,1,2)
+        print('Refboundary', refBoundary)
+        print('Boundary', dst)
+        M = cv.getPerspectiveTransform(dst, refBoundary)
+        print('M matrixxxx', M)
+        transformedImage = cv.warpPerspective(img ,M, (self.fluRefImg.shape[1], self.fluRefImg.shape[0]))
+        # show_image(roi)
+        show_image(transformedImage)
         return dst 
 
 
@@ -301,13 +320,20 @@ class ImageProcessor:
         # check sharpness (refactored)
         (x1, y1), (x2, y2) = self.getViewfinderRect(img)
 
-        print(x1, y1, x2, y2)
+        print('[INFO] top left br' , x1, y1, x2, y2)
         roi = img[x1:x2, y1:y2]
+        # cropped = cv.rectangle(img,(y1, x1),(y2, x2),(0,255,0),5)
+        # cropped = cv.rectangle(img,(384,0),(510,128),(0,255,0),3)
+        # TODO: Fix the ROI here
         print(roi.shape)
+        # show_image(img)
+        # show_image(roi)
+        # show_image(img)
+        # show_image(cropped)
         isSharp = self.checkSharpness(roi)
 
         if (exposureResult == ExposureResult.NORMAL and isSharp):
-            boundary = self.detectRDT(img)
+            boundary = self.detectRDT(roi)
             if boundary is not None:
                 isCentered = False
                 sizeResult = SizeResult.INVALID
@@ -317,15 +343,38 @@ class ImageProcessor:
                 print('[INFO] width, height of boundary', w, h)
 
                 if (w > 0 and h > 0):
-                    isCentered = self.checkIfCentered(boundary, img.shape, img)
-                    sizeResult = self.checkSize(boundary, img.shape)
-                    isRightOrientation = self.checkOrientation(boundary)
-                    angle = self.measureOrientation(boundary)
+                    isCentered = self.checkIfCentered(boundary, roi.shape, roi)
+                    sizeResult = self.checkSize(boundary, roi.shape)
+                    isRightOrientation = self.checkOrientation(roi)
+                    angle = self.measureOrientation(roi)
                 passed = sizeResult == SizeResult.RIGHT_SIZE and isCentered and isRightOrientation
                 # TODO: what does the cropRDT do? do we even need that?
-                res = CaptureResult(passed, img, -1 , exposureResult, sizeResult, isCentered, isRightOrientation, isSharp, False, angle)
+                res = CaptureResult(passed, roi, -1 , exposureResult, sizeResult, isCentered, isRightOrientation, isSharp, False, angle)
                 print('[INFO] res', res)
                 return res
+
+        # if (exposureResult == ExposureResult.NORMAL and isSharp):
+        #     boundary = self.detectRDT(roi)
+        #     if boundary is not None:
+        #         isCentered = False
+        #         sizeResult = SizeResult.INVALID
+        #         isRightOrientation = False
+        #         angle = 0.0
+        #         w, h = self.getBoundarySize(boundary)
+        #         print('[INFO] width, height of boundary', w, h)
+
+        #         if (w > 0 and h > 0):
+        #             isCentered = self.checkIfCentered(boundary, img.shape, img)
+        #             sizeResult = self.checkSize(boundary, img.shape)
+        #             isRightOrientation = self.checkOrientation(boundary)
+        #             angle = self.measureOrientation(boundary)
+        #         passed = sizeResult == SizeResult.RIGHT_SIZE and isCentered and isRightOrientation
+        #         # TODO: what does the cropRDT do? do we even need that?
+        #         res = CaptureResult(passed, roi, -1 , exposureResult, sizeResult, isCentered, isRightOrientation, isSharp, False, angle)
+        #         print('[INFO] res', res)
+        #         return res
+
+        
         res = CaptureResult(False, None, -1 , exposureResult, SizeResult.INVALID, False, False, isSharp, False, 0.0)
         print('[INFO] res', res)
         return res
@@ -459,6 +508,11 @@ class ImageProcessor:
 
     def cropResultWindow(self, img, boundary):
         print('[INFO] cropResultWindow')
+        # show_image(img)
+        # show_image(self.fluRefImg)
+        print('Boundary shape', boundary.shape)
+        print('Boundary' , boundary)
+        print('Image shape', img.shape)
         h, w = self.fluRefImg.shape
         # img2 = cv.polylines(img,[np.int32(boundary)],True,(255,0,0))
         # show_image(img2)
@@ -468,6 +522,7 @@ class ImageProcessor:
         M = cv.getPerspectiveTransform(boundary, refBoundary)
         transformedImage = cv.warpPerspective(img,M, (self.fluRefImg.shape[1], self.fluRefImg.shape[0]))
         # show_image(transformedImage)
+        # TODO: this is where things went wrong, it cannot perform perspective transform
 
         (tl, br) = self.checkFiducialKMeans(transformedImage)
         print('[INFO] tl, br', tl.x, tl.y, br.x, br.y)
@@ -628,7 +683,13 @@ class ImageProcessor:
         print('Imgshep', img.shape)
         print('boundary', boundary)
         try:
-            result = self.cropResultWindow(colorImg, boundary)
+            (x1, y1), (x2, y2) = self.getViewfinderRect(img)
+            print('[INFO] top left br' , x1, y1, x2, y2)
+            roi = colorImg[x1:x2, y1:y2]
+            # cropped = cv.rectangle(img,(y1, x1),(y2, x2),(0,255,0),5)
+            # show_image(cropped)
+            # show_image(roi)
+            result = self.cropResultWindow(roi, boundary)
             cv.imwrite('cropResult.png', result)
             # print('[INFO] cropResultWindow res:', result)
             control, testA, testB = False, False, False
