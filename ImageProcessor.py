@@ -205,8 +205,8 @@ class ImageProcessor:
                    singlePointColor = None,
                    matchesMask = matchesMask, # draw only inliers
                    flags = 2)
-        img3 = cv.drawMatches(self.fluRefImg,self.refSiftKeyPoints,img2,keypoints,good,None,**draw_params)
-        plt.imshow(img3, 'gray'),plt.show()
+        # img3 = cv.drawMatches(self.fluRefImg,self.refSiftKeyPoints,img2,keypoints,good,None,**draw_params)
+        # plt.imshow(img3, 'gray'),plt.show()
 
         h, w  = self.fluRefImg.shape
         refBoundary = np.float32([ [0,0], [0,h-1],[w-1,h-1],[w-1,0]]).reshape(-1,1,2)
@@ -446,14 +446,14 @@ class ImageProcessor:
         threshold = cv.erode(threshold, kernelErode,iterations = 1)
         threshold = cv.dilate(threshold,kernelDilate,iterations = 1)
         threshold = cv.GaussianBlur(threshold,(5,5),2, 2)
-        show_image(threshold)
+        # show_image(threshold)
         im2, contours, hierarchy = cv.findContours(threshold ,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
 
         fiducialRects = []
         fiducialRect = (None, None)
-        show_image(img)
-        cv.drawContours(img, contours, -1, (0,255,0), 3)
-        show_image(img)
+        # show_image(img)
+        # cv.drawContours(img, contours, -1, (0,255,0), 3)
+        # show_image(img)
         
         for contour in contours:
             rect = cv.boundingRect(contour)
