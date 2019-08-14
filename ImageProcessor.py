@@ -18,7 +18,7 @@ from constants import (OVER_EXP_THRESHOLD, UNDER_EXP_THRESHOLD, OVER_EXP_WHITE_C
                        TEST_A_LINE_POSITION, TEST_B_LINE_POSITION, INTENSITY_THRESHOLD, 
                        CONTROL_INTENSITY_PEAK_THRESHOLD, TEST_INTENSITY_PEAK_THRESHOLD)
 from result import (ExposureResult, CaptureResult, InterpretationResult, SizeResult)
-from utils import (show_image, resize_image, Point, Rect, crop_rect)
+from utils import (show_image, resize_image, Point, Rect, crop_rect, peakdet)
 
 class ImageProcessor:
     def __init__(self):
@@ -139,7 +139,7 @@ class ImageProcessor:
         mask = np.zeros((width, height), np.uint8)
         mask[p1[0]:p2[0], p1[1]: p2[1]] = 255
         # show_image(img)
-        show_image(roi)
+        # show_image(roi)
         # keypoints, descriptors = self.siftDetector.detectAndCompute(img, None)
         # show_image(mask)
         keypoints, descriptors = self.siftDetector.detectAndCompute(img, mask)
@@ -454,9 +454,9 @@ class ImageProcessor:
         fiducialRect = (None, None)
         arrows = 0
 
-        show_image(img)
-        cv.drawContours(img, contours, -1, (0,255,0), 3)
-        show_image(img)
+        # show_image(img)
+        # cv.drawContours(img, contours, -1, (0,255,0), 3)
+        # show_image(img)
 
         for contour in contours:
             rect = cv.boundingRect(contour)
@@ -495,7 +495,7 @@ class ImageProcessor:
                         img.shape[1] - RESULT_WINDOW_RECT_WIDTH_PADDING)
             img = cv.rectangle(img,(int(tl.x), int(tl.y)),(int(br.x), int(br.y)),(0,255,0),3)
             print('[INFO] tl, br', tl.x, br.x)
-            show_image(img)
+            # show_image(img)
             fiducialRect = (tl, br)
 
         print('[INFO] fiducialRect', fiducialRect)
@@ -645,22 +645,22 @@ class ImageProcessor:
         # HSL so only take the L channel to distinguish lines
         print('[INFO] result img shape', img.shape)
         show_image(img)
-        lightness = img[:,:,2]
+        colLightness = np.mean(img[:,:,1], axis = 0)
+        # plt.plot(colLightness)
+        # plt.show()
+        print('[INFO] avgLightness shape', colLightness.shape)
         # Inverse the L channel so that the lines will be detected as peak, not bottom like the original array
-        print('[INFO] lightness shape', lightness)
+        colLightness = [255] - colLightness
+        print('[INFO] lightness shape', colLightness.shape)
         # Find peak and peak should correspond to lines
-        count = 0
-        plt.plot(img[:,:,0].ravel())
+        maxtab, mintab = peakdet(colLightness, 40.0)
+        print('Max', maxtab)
+        print('Total strip count', len(maxtab))
+        plt.plot(colLightness)
+        plt.scatter(np.array(maxtab)[:,0], np.array(maxtab)[:,1], color='blue')
+        plt.scatter(np.array(mintab)[:,0], np.array(mintab)[:,1], color='red')
         plt.show()
-
-        plt.plot(img[:,:,1].ravel())
-        plt.show()
-
-        plt.plot(img[:,:,2].ravel())
-        plt.show()
-
-
-        return count
+        return len(maxtab)
 
 
     def interpretResult(self, src):
@@ -728,7 +728,6 @@ class ImageProcessor:
         #     file.write(str(InterpretationResult(result, control, testA, testB))) 
         # return InterpretationResult(result, control, testA, testB)
         
-        
         try:
             (x1, y1), (x2, y2) = self.getViewfinderRect(img)
             print('[INFO] top left br' , x1, y1, x2, y2)
@@ -755,8 +754,8 @@ class ImageProcessor:
             cv.imwrite('result.png', result)
             linesResult = self.detectLinesWithPeak(result)
             with open('interpretResult.txt', 'w') as file:
-                file.write(str(InterpretationResult(result, control, testA, testB))) 
-            return InterpretationResult(result, control, testA, testB)
+                file.write(str(InterpretationResult(result, control, testA, testB, linesResult))) 
+            return InterpretationResult(result, control, testA, testB, linesResult)
         except: 
             # Not detected found
             print("Something went wrong")

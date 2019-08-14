@@ -33,17 +33,18 @@ class CaptureResult():
 
 
 class InterpretationResult():
-    def __init__(self, resultImg=None, control=None, testA=None, testB=None):
+    def __init__(self, resultImg=None, control=None, testA=None, testB=None, lineCount=0):
         self.resultImg = resultImg
         self.control = control
         self.testA = testA
         self.testB = testB
+        self.lineCount = lineCount
 
     def __str__(self):
-        return 'InterpretResult(Control Line: %s, Test A: %s, TestB: %s)' % (self.control, self.testA, self.testB)
+        return 'InterpretResult(Control Line: %s, Test A: %s, TestB: %s, Line Count: %s)' % (self.control, self.testA, self.testB, self.lineCount)
 
     def __repr__(self):
-        return 'InterpretResult(Control Line: %s, Test A: %s, TestB: %s)' % (self.control, self.testA, self.testB)
+        return 'InterpretResult(Control Line: %s, Test A: %s, TestB: %s, Line Count: %s)' % (self.control, self.testA, self.testB, self.lineCount)
 
 
 class SizeResult(enum.Enum):

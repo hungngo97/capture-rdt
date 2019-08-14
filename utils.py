@@ -1,12 +1,133 @@
 import cv2 as cv
 import numpy as np
 import os
+import sys
+from numpy import NaN, Inf, arange, isscalar, asarray, array
+
 
 FILES_TO_DELETE = [
     'cropResult.png',
     'result.png',
     'interpretResult.txt'
 ]
+
+
+def peakdet(v, delta, x=None):
+    """
+    Converted from MATLAB script at http://billauer.co.il/peakdet.html
+
+    Returns two arrays
+
+    function [maxtab, mintab]=peakdet(v, delta, x)
+    %PEAKDET Detect peaks in a vector
+    %        [MAXTAB, MINTAB] = PEAKDET(V, DELTA) finds the local
+    %        maxima and minima ("peaks") in the vector V.
+    %        MAXTAB and MINTAB consists of two columns. Column 1
+    %        contains indices in V, and column 2 the found values.
+    %      
+    %        With [MAXTAB, MINTAB] = PEAKDET(V, DELTA, X) the indices
+    %        in MAXTAB and MINTAB are replaced with the corresponding
+    %        X-values.
+    %
+    %        A point is considered a maximum peak if it has the maximal
+    %        value, and was preceded (to the left) by a value lower by
+    %        DELTA.
+
+    % Eli Billauer, 3.4.05 (Explicitly not copyrighted).
+    % This function is released to the public domain; Any use is allowed.
+
+    """
+    maxtab = []
+    mintab = []
+
+    if x is None:
+        x = arange(len(v))
+
+    v = asarray(v)
+
+    if len(v) != len(x):
+        sys.exit('Input vectors v and x must have same length')
+
+    if len(v) < 1:
+        sys.exit('Array must have at least 1 element')
+
+    if not isscalar(delta):
+        sys.exit('Input argument delta must be a scalar')
+
+    if delta <= 0:
+        sys.exit('Input argument delta must be positive')
+
+    mn, mx = v[0], v[0]
+    mnpos, mxpos = None, None
+
+    lookformax = True
+    maxWidth = 0
+    minWidth = 0
+
+    for i in arange(1, len(v)):
+        this = v[i]
+        if this > mx:
+            mx = this
+            mxpos = x[i]
+            maxWidth += 1
+        if this < mn:
+            mn = this
+            mnpos = x[i]
+            minWidth += 1
+
+        if lookformax:
+            if this < mx-delta:
+                if mxpos != None:
+                    """
+                        TODO: width here might not be really accurate if there is a 
+                        sharp increase from the left, and then a slower drop to the right,
+                        the width will still be really small. We need a way to get the width from both 
+                        sides of the peak
+                    """
+                    maxtab.append(
+                        (mxpos, mx, findPeakWidth(i, v, mx, findMax=True)))
+                mn = this
+                maxWidth = 0
+                mnpos = x[i]
+                lookformax = False
+        else:
+            if this > mn+delta:
+                if mnpos != NaN:
+                    mintab.append(
+                        (mnpos, mn, findPeakWidth(i, v, mn, findMax=False)))
+                mx = this
+                minWidth = 0
+                mxpos = x[i]
+                lookformax = True
+
+    return array(maxtab), array(mintab)
+
+
+def findPeakWidth(idx, arr, val, findMax):
+    width = 0
+    if (findMax):
+        # Find the furthest minimum left
+        i = idx
+        while (i < len(arr) and arr[i] < val):
+            width += 1
+            i -= 1
+        # Find the furthest minimum right
+        i = idx
+        while (i < len(arr) and arr[i] < val):
+            width += 1
+            i += 1
+    else:
+        # Find the furthest maximum left
+        i = idx
+        while (i < len(arr) and arr[i] > val):
+            width += 1
+            i -= 1
+        # Find the furthest maximum right
+        i = idx
+        while (i < len(arr) and arr[i] > val):
+            width += 1
+            i += 1
+    return width
 
 
 def show_image(img, title="Example"):
