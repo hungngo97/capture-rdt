@@ -716,46 +716,48 @@ class ImageProcessor:
         result = self.enhanceResultWindow(result, (5, result.shape[1]))
         # result = self.correctGamma(result, 0.75)
         # TODO: do we need to do correct Gamma?
+        #  ===== DEBUG ======
+        # control = self.readControlLine(result, Point(CONTROL_LINE_POSITION, 0))
+        # testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
+        # testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
+        # print('[INFO] lines result', control, testA, testB)
+        # # show_image(result)
+        # cv.imwrite('result.png', result)
+        # linesResult = self.detectLinesWithPeak(result)
+        # with open('interpretResult.txt', 'w') as file:
+        #     file.write(str(InterpretationResult(result, control, testA, testB))) 
+        # return InterpretationResult(result, control, testA, testB)
+        
+        
+        try:
+            (x1, y1), (x2, y2) = self.getViewfinderRect(img)
+            print('[INFO] top left br' , x1, y1, x2, y2)
+            roi = colorImg[x1:x2, y1:y2]
+            # cropped = cv.rectangle(img,(y1, x1),(y2, x2),(0,255,0),5)
+            # show_image(cropped)
+            # show_image(roi)
+            result = self.cropResultWindow(colorImg, boundary)
+            cv.imwrite('cropResult.png', result)
+            # print('[INFO] cropResultWindow res:', result)
+            control, testA, testB = False, False, False
 
-        control = self.readControlLine(result, Point(CONTROL_LINE_POSITION, 0))
-        testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
-        testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
-        print('[INFO] lines result', control, testA, testB)
-        # show_image(result)
-        cv.imwrite('result.png', result)
-        linesResult = self.detectLinesWithPeak(result)
-        with open('interpretResult.txt', 'w') as file:
-            file.write(str(InterpretationResult(result, control, testA, testB))) 
-        return InterpretationResult(result, control, testA, testB)
-        # try:
-        #     (x1, y1), (x2, y2) = self.getViewfinderRect(img)
-        #     print('[INFO] top left br' , x1, y1, x2, y2)
-        #     roi = colorImg[x1:x2, y1:y2]
-        #     # cropped = cv.rectangle(img,(y1, x1),(y2, x2),(0,255,0),5)
-        #     # show_image(cropped)
-        #     # show_image(roi)
-        #     result = self.cropResultWindow(colorImg, boundary)
-        #     cv.imwrite('cropResult.png', result)
-        #     # print('[INFO] cropResultWindow res:', result)
-        #     control, testA, testB = False, False, False
+            if (result.shape[0] == 0 and result.shape[1] == 0):
+                return InterpretationResult(result, False, False, False)
+            result = self.enhanceResultWindow(result, (5, result.shape[1]))
+            # result = self.correctGamma(result, 0.75)
+            # TODO: do we need to do correct Gamma?
 
-        #     if (result.shape[0] == 0 and result.shape[1] == 0):
-        #         return InterpretationResult(result, False, False, False)
-        #     result = self.enhanceResultWindow(result, (5, result.shape[1]))
-        #     # result = self.correctGamma(result, 0.75)
-        #     # TODO: do we need to do correct Gamma?
-
-        #     control = self.readControlLine(result, Point(CONTROL_LINE_POSITION, 0))
-        #     testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
-        #     testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
-        #     print('[INFO] lines result', control, testA, testB)
-        #     # show_image(result)
-        #     cv.imwrite('result.png', result)
-        #     linesResult = self.detectLinesWithPeak(result)
-        #     with open('interpretResult.txt', 'w') as file:
-        #         file.write(str(InterpretationResult(result, control, testA, testB))) 
-        #     return InterpretationResult(result, control, testA, testB)
-        # except: 
-        #     # Not detected found
-        #     print("Something went wrong")
-        #     return None
+            control = self.readControlLine(result, Point(CONTROL_LINE_POSITION, 0))
+            testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
+            testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
+            print('[INFO] lines result', control, testA, testB)
+            # show_image(result)
+            cv.imwrite('result.png', result)
+            linesResult = self.detectLinesWithPeak(result)
+            with open('interpretResult.txt', 'w') as file:
+                file.write(str(InterpretationResult(result, control, testA, testB))) 
+            return InterpretationResult(result, control, testA, testB)
+        except: 
+            # Not detected found
+            print("Something went wrong")
+            return None
