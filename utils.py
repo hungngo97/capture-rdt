@@ -85,7 +85,7 @@ def peakdet(v, delta, x=None):
                         sides of the peak
                     """
                     maxtab.append(
-                        (mxpos, mx, findPeakWidth(i, v, mx, findMax=True)))
+                        (mxpos, mx, findPeakWidth(mxpos, v, mx, findMax=True)))
                 mn = this
                 maxWidth = 0
                 mnpos = x[i]
@@ -94,7 +94,7 @@ def peakdet(v, delta, x=None):
             if this > mn+delta:
                 if mnpos != NaN:
                     mintab.append(
-                        (mnpos, mn, findPeakWidth(i, v, mn, findMax=False)))
+                        (mnpos, mn, findPeakWidth(mnpos, v, mn, findMax=False)))
                 mx = this
                 minWidth = 0
                 mxpos = x[i]
@@ -107,24 +107,28 @@ def findPeakWidth(idx, arr, val, findMax):
     width = 0
     if (findMax):
         # Find the furthest minimum left
-        i = idx
-        while (i < len(arr) and arr[i] < val):
+        i = idx - 1
+        print(arr[i - 10: i + 10])
+        print(arr[i])
+        while (i > 0 and arr[i] > arr[i - 1]):
             width += 1
             i -= 1
+        print('First', i, width)
         # Find the furthest minimum right
         i = idx
-        while (i < len(arr) and arr[i] < val):
+        while (i < len(arr) - 1 and arr[i] > arr[i + 1]):
             width += 1
             i += 1
+        print('Sec', i, width)
     else:
         # Find the furthest maximum left
         i = idx
-        while (i < len(arr) and arr[i] > val):
+        while (i > 0 and arr[i] < arr[i - 1]):
             width += 1
             i -= 1
         # Find the furthest maximum right
         i = idx
-        while (i < len(arr) and arr[i] > val):
+        while (i < len(arr) - 1 and arr[i] < arr[i + 1]):
             width += 1
             i += 1
     return width
