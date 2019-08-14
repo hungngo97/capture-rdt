@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy as sp
 import os
 import enum
 import time
@@ -451,10 +452,12 @@ class ImageProcessor:
 
         fiducialRects = []
         fiducialRect = (None, None)
-        # show_image(img)
-        # cv.drawContours(img, contours, -1, (0,255,0), 3)
-        # show_image(img)
-        
+        arrows = 0
+
+        show_image(img)
+        cv.drawContours(img, contours, -1, (0,255,0), 3)
+        show_image(img)
+
         for contour in contours:
             rect = cv.boundingRect(contour)
             x,y,w,h = rect
@@ -463,18 +466,23 @@ class ImageProcessor:
             if (FIDUCIAL_POSITION_MIN < rectPos and rectPos < FIDUCIAL_POSITION_MAX and FIDUCIAL_MIN_HEIGHT < h and FIDUCIAL_MIN_WIDTH < w and w < FIDUCIAL_MAX_WIDTH): 
                 fiducialRects.append(Rect(x,y,w,h))
                 print('[INFO] Found fiducial rect, ', x, y, w, h)
+                if x > 1500:
+                    #It should be the arrow
+                    arrows += 1
                 # cv.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
                 # show_image(img)
         # There are some edge cases like the arrows on the right get recognized as 2 or 3 small arrows,
         # Therefore it can lead to fiducialRect > 2, but what we can do is sort them and take the average
         # between the 2 components (like the upper fiducial mean x and lower fiducial mean x)
         print('[INFO] fiducialRects', len(fiducialRects))
-        if (len(fiducialRects) == FIDUCIAL_COUNT):
+        print('[INFO] arrows', arrows)
+        fiducialRects.sort(key=lambda rect: rect.x)
+        if (len(fiducialRects) == FIDUCIAL_COUNT or (len(fiducialRects) > FIDUCIAL_COUNT and len(fiducialRects) - arrows == 1)):
             center0 = fiducialRects[0].x + fiducialRects[0].w
             center1 = fiducialRects[0].x + fiducialRects[0].w
 
             if (len(fiducialRects) > 1):
-                center1 = fiducialRects[1].x + fiducialRects[1].w
+                center1 = fiducialRects[-1].x + fiducialRects[-1].w
 
             midpoint = int((center0 + center1) / 2)
             diff = abs(center0 - center1)
@@ -487,7 +495,7 @@ class ImageProcessor:
                         img.shape[1] - RESULT_WINDOW_RECT_WIDTH_PADDING)
             img = cv.rectangle(img,(int(tl.x), int(tl.y)),(int(br.x), int(br.y)),(0,255,0),3)
             print('[INFO] tl, br', tl.x, br.x)
-            # show_image(img)
+            show_image(img)
             fiducialRect = (tl, br)
 
         print('[INFO] fiducialRect', fiducialRect)
@@ -632,6 +640,28 @@ class ImageProcessor:
         print('[INFO] readTestLine')
         return self.readLine(img, testLinePosition, False)
 
+    def detectLinesWithPeak(self, img):
+        print('[INFO] start detectLinesWithPeak')
+        # HSL so only take the L channel to distinguish lines
+        print('[INFO] result img shape', img.shape)
+        show_image(img)
+        lightness = img[:,:,2]
+        # Inverse the L channel so that the lines will be detected as peak, not bottom like the original array
+        print('[INFO] lightness shape', lightness)
+        # Find peak and peak should correspond to lines
+        count = 0
+        plt.plot(img[:,:,0].ravel())
+        plt.show()
+
+        plt.plot(img[:,:,1].ravel())
+        plt.show()
+
+        plt.plot(img[:,:,2].ravel())
+        plt.show()
+
+
+        return count
+
 
     def interpretResult(self, src):
         print('[INFO] interpretResult')
@@ -669,34 +699,63 @@ class ImageProcessor:
         print('flurefimgshp,', self.fluRefImg.shape)
         print('Imgshep', img.shape)
         print('boundary', boundary)
-        try:
-            (x1, y1), (x2, y2) = self.getViewfinderRect(img)
-            print('[INFO] top left br' , x1, y1, x2, y2)
-            roi = colorImg[x1:x2, y1:y2]
-            # cropped = cv.rectangle(img,(y1, x1),(y2, x2),(0,255,0),5)
-            # show_image(cropped)
-            # show_image(roi)
-            result = self.cropResultWindow(colorImg, boundary)
-            cv.imwrite('cropResult.png', result)
-            # print('[INFO] cropResultWindow res:', result)
-            control, testA, testB = False, False, False
 
-            if (result.shape[0] == 0 and result.shape[1] == 0):
-                return InterpretationResult(result, False, False, False)
-            result = self.enhanceResultWindow(result, (5, result.shape[1]))
-            # result = self.correctGamma(result, 0.75)
-            # TODO: do we need to do correct Gamma?
+        (x1, y1), (x2, y2) = self.getViewfinderRect(img)
+        print('[INFO] top left br' , x1, y1, x2, y2)
+        roi = colorImg[x1:x2, y1:y2]
+        # cropped = cv.rectangle(img,(y1, x1),(y2, x2),(0,255,0),5)
+        # show_image(cropped)
+        # show_image(roi)
+        result = self.cropResultWindow(colorImg, boundary)
+        cv.imwrite('cropResult.png', result)
+        # print('[INFO] cropResultWindow res:', result)
+        control, testA, testB = False, False, False
 
-            control = self.readControlLine(result, Point(CONTROL_LINE_POSITION, 0))
-            testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
-            testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
-            print('[INFO] lines result', control, testA, testB)
-            # show_image(result)
-            cv.imwrite('result.png', result)
-            with open('interpretResult.txt', 'w') as file:
-                file.write(str(InterpretationResult(result, control, testA, testB))) 
-            return InterpretationResult(result, control, testA, testB)
-        except: 
-            # Not detected found
-            print("Something went wrong")
-            return None
+        if (result.shape[0] == 0 and result.shape[1] == 0):
+            return InterpretationResult(result, False, False, False)
+        result = self.enhanceResultWindow(result, (5, result.shape[1]))
+        # result = self.correctGamma(result, 0.75)
+        # TODO: do we need to do correct Gamma?
+
+        control = self.readControlLine(result, Point(CONTROL_LINE_POSITION, 0))
+        testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
+        testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
+        print('[INFO] lines result', control, testA, testB)
+        # show_image(result)
+        cv.imwrite('result.png', result)
+        linesResult = self.detectLinesWithPeak(result)
+        with open('interpretResult.txt', 'w') as file:
+            file.write(str(InterpretationResult(result, control, testA, testB))) 
+        return InterpretationResult(result, control, testA, testB)
+        # try:
+        #     (x1, y1), (x2, y2) = self.getViewfinderRect(img)
+        #     print('[INFO] top left br' , x1, y1, x2, y2)
+        #     roi = colorImg[x1:x2, y1:y2]
+        #     # cropped = cv.rectangle(img,(y1, x1),(y2, x2),(0,255,0),5)
+        #     # show_image(cropped)
+        #     # show_image(roi)
+        #     result = self.cropResultWindow(colorImg, boundary)
+        #     cv.imwrite('cropResult.png', result)
+        #     # print('[INFO] cropResultWindow res:', result)
+        #     control, testA, testB = False, False, False
+
+        #     if (result.shape[0] == 0 and result.shape[1] == 0):
+        #         return InterpretationResult(result, False, False, False)
+        #     result = self.enhanceResultWindow(result, (5, result.shape[1]))
+        #     # result = self.correctGamma(result, 0.75)
+        #     # TODO: do we need to do correct Gamma?
+
+        #     control = self.readControlLine(result, Point(CONTROL_LINE_POSITION, 0))
+        #     testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
+        #     testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
+        #     print('[INFO] lines result', control, testA, testB)
+        #     # show_image(result)
+        #     cv.imwrite('result.png', result)
+        #     linesResult = self.detectLinesWithPeak(result)
+        #     with open('interpretResult.txt', 'w') as file:
+        #         file.write(str(InterpretationResult(result, control, testA, testB))) 
+        #     return InterpretationResult(result, control, testA, testB)
+        # except: 
+        #     # Not detected found
+        #     print("Something went wrong")
+        #     return None
