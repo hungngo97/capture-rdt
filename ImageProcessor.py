@@ -644,7 +644,7 @@ class ImageProcessor:
         print('[INFO] start detectLinesWithPeak')
         # HSL so only take the L channel to distinguish lines
         print('[INFO] result img shape', img.shape)
-        show_image(img)
+        # show_image(img)
         colLightness = np.mean(img[:,:,1], axis = 0)
         # plt.plot(colLightness)
         # plt.show()
@@ -656,10 +656,10 @@ class ImageProcessor:
         maxtab, mintab = peakdet(colLightness, 40.0)
         print('Max', maxtab)
         print('Total strip count', len(maxtab))
-        plt.plot(colLightness)
-        plt.scatter(np.array(maxtab)[:,0], np.array(maxtab)[:,1], color='blue')
-        plt.scatter(np.array(mintab)[:,0], np.array(mintab)[:,1], color='red')
-        plt.show()
+        # plt.plot(colLightness)
+        # plt.scatter(np.array(maxtab)[:,0], np.array(maxtab)[:,1], color='blue')
+        # plt.scatter(np.array(mintab)[:,0], np.array(mintab)[:,1], color='red')
+        # plt.show()
         return len(maxtab)
 
 
@@ -707,6 +707,7 @@ class ImageProcessor:
         # show_image(cropped)
         # show_image(roi)
         result = self.cropResultWindow(colorImg, boundary)
+        # show_image(result)
         cv.imwrite('cropResult.png', result)
         # print('[INFO] cropResultWindow res:', result)
         control, testA, testB = False, False, False
