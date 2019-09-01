@@ -770,6 +770,7 @@ class ImageProcessor:
             linesResult = self.detectLinesWithPeak(result)
             with open('interpretResult.txt', 'w') as file:
                 file.write(str(InterpretationResult(result, control, testA, testB, linesResult))) 
+            print('[INFO] detection result: ', str(InterpretationResult(result, control, testA, testB, linesResult)))
             return InterpretationResult(result, control, testA, testB, linesResult)
         except: 
             # Not detected found

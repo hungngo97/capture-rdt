@@ -126,3 +126,5 @@ class ImageProcessorScrape(ImageProcessor):
 
             # Clear things up
             os.remove(imageFileName)
+
+            return interpretResult
