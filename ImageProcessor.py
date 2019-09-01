@@ -750,7 +750,7 @@ class ImageProcessor:
             # show_image(cropped)
             # show_image(roi)
             result = self.cropResultWindow(colorImg, boundary)
-            show_image(result)
+            # show_image(result)
             cv.imwrite('cropResult.png', result)
             # print('[INFO] cropResultWindow res:', result)
             control, testA, testB = False, False, False

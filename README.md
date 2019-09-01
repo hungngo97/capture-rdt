@@ -36,7 +36,11 @@ python main.py
 python gui.py
 
 # To run scraping functions, provide a path to the barcodes txt file
-python scrape.py --barcodes input/barcodes.txt
+python scrape.py --barcodes input/barcodes.txt 
+# or use the default:  python scrape.py
+
+# To run algorithm report anaysis, provide a path to the csv file
+python report.py --f resources/query.csv
 
 ```
 

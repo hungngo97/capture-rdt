@@ -6,3 +6,4 @@ Detection/
 cropResult.png
 result.png
 interpretResult.txt
+*.png
