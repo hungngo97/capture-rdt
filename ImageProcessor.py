@@ -154,7 +154,7 @@ class ImageProcessor:
         # Matching
         matches = self.matcher.knnMatch(self.refSiftDescriptors, descriptors, k=2)
         print('[INFO] Finish matching')
-        print('matches', matches)
+        # print('matches', matches)
         # Apply ratio test
         good = []
         for m,n in matches:
@@ -453,6 +453,7 @@ class ImageProcessor:
         fiducialRects = []
         fiducialRect = (None, None)
         arrows = 0
+        fiducial = 0
 
         # show_image(img)
         # cv.drawContours(img, contours, -1, (0,255,0), 3)
@@ -469,6 +470,8 @@ class ImageProcessor:
                 if x > 1500:
                     #It should be the arrow
                     arrows += 1
+                if x > 250 and x < 600:
+                    fiducial += 1 #should be the black rectangle
                 # cv.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
                 # show_image(img)
         # There are some edge cases like the arrows on the right get recognized as 2 or 3 small arrows,
@@ -476,18 +479,24 @@ class ImageProcessor:
         # between the 2 components (like the upper fiducial mean x and lower fiducial mean x)
         print('[INFO] fiducialRects', len(fiducialRects))
         print('[INFO] arrows', arrows)
+        print('[INFO] black fiducial', fiducial)
         fiducialRects.sort(key=lambda rect: rect.x)
-        if (len(fiducialRects) == FIDUCIAL_COUNT or (len(fiducialRects) > FIDUCIAL_COUNT and len(fiducialRects) - arrows == 1)):
+        if (len(fiducialRects) == FIDUCIAL_COUNT or (len(fiducialRects) > FIDUCIAL_COUNT and len(fiducialRects) - arrows == fiducial)):
+            print('[INFO] loookkkkk', fiducialRects)
             center0 = fiducialRects[0].x + fiducialRects[0].w
-            center1 = fiducialRects[0].x + fiducialRects[0].w
+            center1 = fiducialRects[1].x + fiducialRects[1].w
 
-            if (len(fiducialRects) > 1):
+            if (len(fiducialRects) > 2):
                 center1 = fiducialRects[-1].x + fiducialRects[-1].w
 
             midpoint = int((center0 + center1) / 2)
             diff = abs(center0 - center1)
             scale = 1 if FIDUCIAL_DISTANCE == 0 else diff / FIDUCIAL_DISTANCE
             offset = scale * FIDUCIAL_TO_CONTROL_LINE_OFFSET
+
+            print('CEnter0', center0)
+            print('center1', center1)
+            print('midpoint', midpoint)
 
             tl = Point(midpoint + offset - RESULT_WINDOW_RECT_HEIGHT * scale / 2.0,
                         RESULT_WINDOW_RECT_WIDTH_PADDING)
@@ -520,6 +529,8 @@ class ImageProcessor:
         # TODO: this is where things went wrong, it cannot perform perspective transform
 
         (tl, br) = self.checkFiducialKMeans(transformedImage)
+        if tl is None and br is None:
+            return None
         print('[INFO] tl, br', tl.x, tl.y, br.x, br.y)
         cropResultWindow = transformedImage[int(tl.y): int(br.y), int(tl.x):int(br.x)]
         print('[INFO] shape', cropResultWindow.shape, transformedImage.shape, img.shape)
@@ -707,6 +718,8 @@ class ImageProcessor:
         # show_image(cropped)
         # show_image(roi)
         result = self.cropResultWindow(colorImg, boundary)
+        if result is None:
+            return None
         # show_image(result)
         cv.imwrite('cropResult.png', result)
         # print('[INFO] cropResultWindow res:', result)
@@ -737,6 +750,7 @@ class ImageProcessor:
             # show_image(cropped)
             # show_image(roi)
             result = self.cropResultWindow(colorImg, boundary)
+            show_image(result)
             cv.imwrite('cropResult.png', result)
             # print('[INFO] cropResultWindow res:', result)
             control, testA, testB = False, False, False

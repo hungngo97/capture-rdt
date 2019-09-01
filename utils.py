@@ -108,18 +108,18 @@ def findPeakWidth(idx, arr, val, findMax):
     if (findMax):
         # Find the furthest minimum left
         i = idx - 1
-        print(arr[i - 10: i + 10])
-        print(arr[i])
+        # print(arr[i - 10: i + 10])
+        # print(arr[i])
         while (i > 0 and arr[i] > arr[i - 1]):
             width += 1
             i -= 1
-        print('First', i, width)
+        # print('First', i, width)
         # Find the furthest minimum right
         i = idx
         while (i < len(arr) - 1 and arr[i] > arr[i + 1]):
             width += 1
             i += 1
-        print('Sec', i, width)
+        # print('Sec', i, width)
     else:
         # Find the furthest maximum left
         i = idx

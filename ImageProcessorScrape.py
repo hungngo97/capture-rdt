@@ -84,7 +84,9 @@ class ImageProcessorScrape(ImageProcessor):
             # Detection Checking
             detectionResult = ImageProcessor.captureRDT(self, imageFileName)
             DIR_PATH = ROOT_DETECTION_DIR
-            if detectionResult == None or detectionResult.sizeResult == SizeResult.INVALID:
+            if detectionResult == None:
+                """ TODO: I think sizeResult of detection result is not correct as well"""
+            # if detectionResult == None or detectionResult.sizeResult == SizeResult.INVALID:
                 DIR_PATH += '/' + FALSE_SUBDIR + '/' + CANNOT_DETECT
             else:
                 DIR_PATH += '/' + TRUE_SUBDIR
