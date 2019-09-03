@@ -1,3 +1,4 @@
+from __future__ import division
 from ImageProcessorScrape import ImageProcessorScrape
 import pandas as pd
 import numpy as np
@@ -47,8 +48,8 @@ PCRMappings = {
 }
 
 HighContrastLineIndex = {
-    'oneLine': 0,
-    'noneOfTheAbove': 1,
+    'noneOfTheAbove': 0,
+    'oneLine': 1,
     'twoLines': 2,
     'threeLines': 3
 }
@@ -267,6 +268,9 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         print('User Response Mappings', UserResponseMappings)
         print('--------------------------Accuracy Table Comparison-----------------------')
         print('=======Python Result========')
+        """
+            TODO: Print better table here
+        """
         print('High Contrast Line Result Table',
               self.resultPythonComparisonWithHighContrastLineAnswer)
         print('PCR Result Table', self.resultPythonComparisonWithPCRResult)
@@ -294,12 +298,109 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         print('')
 
     def reportAndroidResultStatistics(self):
+        # Column
+        #         No interpretation = 0
+        # Both = 1
+        # testA = 2
+        # testB = 3
+        # No flu = 4
         # High Contrast Line
+        # ROw
+        #         'oneLine': 1,
+        # 'noneOfTheAbove': 0,
+        # 'twoLines': 2,
+        # 'threeLines': 3
+        totalCorrect = 0
+        lines = 0
+        for correctContrastLineNumber, row in enumerate(self.resultAndroidComparisonWithHighContrastLineAnswer):
+            totalCorrectInCurrentRow = 0
+            totalInCurrentRow = 0
+            for i, num in enumerate(row):
+                # TODO: not sure if this is correct. Ask CJ!
+                if (correctContrastLineNumber == 0 and i == 0) or \
+                    ((correctContrastLineNumber == 1 and i == 4)) or \
+                    (correctContrastLineNumber == 2 and (i == 2 or i == 3)) or \
+                        (correctContrastLineNumber == 3 and i == 1):
+                    totalCorrect += num
+                    totalCorrectInCurrentRow += num
+                lines += num
+                totalInCurrentRow += num
+            print('True Label (Contrast Line Number):  ',
+                  correctContrastLineNumber)
+            print('Number of correct prediction: ', totalCorrectInCurrentRow)
+            print('Percentage Accuracy: ',
+                  totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
+            print('~~~~~~~~')
 
+        print('Total number of high contrast line data: ', lines)
+        print('Number of correct prediction: ', totalCorrect)
+        print('Percentage correct: ', totalCorrect /
+              lines if lines != 0 else 'N/A')
+        print('~~~~~~~~~~~~')
+                # Column
+        #         No interpretation = 0
+        # Both = 1
+        # testA = 2
+        # testB = 3
+        # No flu = 4
         # PCR Result
+            #   'negative': 0,
+            # 'flu A': 1,
+            # 'flu B': 2
+        totalCorrect = 0
+        lines = 0
+        for correctLabel, row in enumerate(self.resultAndroidComparisonWithHighContrastLineAnswer):
+            totalCorrectInCurrentRow = 0
+            totalInCurrentRow = 0
+            for i, num in enumerate(row):
+                # TODO: not sure if this is correct. Ask CJ!
+                if (correctLabel == 0 and (i == 4 or i == 0)) or \
+                    ((correctLabel == 1 and (i == 2 or i == 1))) or \
+                    (correctLabel == 2 and (i == 1 or i == 3)):
+                    totalCorrect += num
+                    totalCorrectInCurrentRow += num
+                lines += num
+                totalInCurrentRow += num
+            print('True Label (PCR Result):  ',
+                  correctLabel)
+            print('Number of correct prediction: ', totalCorrectInCurrentRow)
+            print('Percentage Accuracy: ',
+                  totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
+            print('~~~~~~~~')
 
+        print('Total number of PCR Result data: ', lines)
+        print('Number of correct prediction: ', totalCorrect)
+        print('Percentage correct: ', totalCorrect /
+              lines if lines != 0 else 'N/A')
+        print('~~~~~~~~~~~~')
         # User Reponse
-        print('')
+        # 'Negative': 0,
+        # 'Positive': 1
+        totalCorrect = 0
+        lines = 0
+        for correctLabel, row in enumerate(self.resultAndroidComparisonWithHighContrastLineAnswer):
+            totalCorrectInCurrentRow = 0
+            totalInCurrentRow = 0
+            for i, num in enumerate(row):
+                # TODO: not sure if this is correct. Ask CJ!
+                if (correctLabel == 0 and (i == 0)) or \
+                    ((correctLabel == 1 and (i != 0))):
+                    totalCorrect += num
+                    totalCorrectInCurrentRow += num
+                lines += num
+                totalInCurrentRow += num
+            print('True Label (User Response Result):  ',
+                  correctLabel)
+            print('Number of correct prediction: ', totalCorrectInCurrentRow)
+            print('Percentage Accuracy: ',
+                  totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
+            print('~~~~~~~~')
+
+        print('Total number of PCR Result data: ', lines)
+        print('Number of correct prediction: ', totalCorrect)
+        print('Percentage correct: ', totalCorrect /
+              lines if lines != 0 else 'N/A')
+        print('~~~~~~~~~~~~')
 
     def reportLineCountStatistics(self):
         totalCorrect = 0
@@ -314,7 +415,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             print('True Label (Number of line):  ', row)
             print('Number of correct prediction: ', totalCorrectInCurrentRow)
             print('Percentage Accuracy: ',
-                  totalCorrectInCurrentRow / totalInCurrentRow if totalCorrectInCurrentRow != 0 else 'N/A')
+                  totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
 
         print('Total number of lines data: ', lines)
