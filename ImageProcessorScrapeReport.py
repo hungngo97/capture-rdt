@@ -9,8 +9,6 @@ from urlConstants import (
 import math
 
 SECRET_PATH = 'keys/cough_photos_key.txt'
-
-
 STATUS = 'Status'
 PCR_RESULT = 'ASPREN: PCR Result'
 RESULTS_USER_RESPONSE = 'Results: Shown to User Based Only on User Responses'
@@ -76,6 +74,7 @@ IntepretationResultMappingsIndex = {
 
 class ImageProcessorScrapeReport(ImageProcessorScrape):
     def __init__(self):
+        self.colLabels = ['No interpretation', 'Both', 'Test A', 'Test B', 'No Flu']
         ImageProcessorScrape.__init__(self)
         """
             Row indices correspond to the labels of highcontrast line or user response
@@ -145,6 +144,11 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
 
     def compareAndroidResult(self, rdt_result, pcr_result, results_user_response, high_contrast_line_answer):
         print('[INFO] start compareAndroidResult')
+        if not (high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer))) or \
+            not (pcr_result and (isinstance(pcr_result, str) or not math.isnan(pcr_result))) or \
+            not (results_user_response and (isinstance(results_user_response, str) or not math.isnan(results_user_response))):
+            return None
+    
         contrastLineRowIndex = HighContrastLineIndex[high_contrast_line_answer]
         pcrRowIndex = PCRMappingsIndex[pcr_result]
         userResponseRowIndex = UserResponseIndex[results_user_response]
@@ -230,74 +234,72 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
 
         for index, row in df.iterrows():
             # row = df.iloc[DEBUG_counter]
-            if row[BARCODE]:
-                # DEBUG
-                print('[INFO] row number: ', index)
-                print(BARCODE, row[BARCODE])
-                print(PCR_RESULT, row[PCR_RESULT])
-                print(RESULTS_USER_RESPONSE, row[RESULTS_USER_RESPONSE])
-                print(RDT_RESULT, row[RDT_RESULT])
-                print(HIGH_CONTRAST_LINE_ANSWER,
-                      row[HIGH_CONTRAST_LINE_ANSWER])
-                print(type(row[RDT_RESULT]))
-                # REPORT
-                validBarcodes += 1
-                total += 1
-                if row[RDT_RESULT] and (isinstance(row[RDT_RESULT], str) or not math.isnan(row[RDT_RESULT])):
-                    IntepretationResultMappings[row[RDT_RESULT]] += 1
-                if row[PCR_RESULT] and isinstance(row[PCR_RESULT], str) or not math.isnan(row[PCR_RESULT]):
-                    PCRMappings[row[PCR_RESULT]] += 1
-                if row[RESULTS_USER_RESPONSE]and isinstance(row[RESULTS_USER_RESPONSE], str) or not math.isnan(row[RESULTS_USER_RESPONSE]):
-                    UserResponseMappings[row[RESULTS_USER_RESPONSE]] += 1
-                if row[HIGH_CONTRAST_LINE_ANSWER] and isinstance(row[HIGH_CONTRAST_LINE_ANSWER], str) or not math.isnan(row[HIGH_CONTRAST_LINE_ANSWER]):
-                    HighContrastLineMappings[row[HIGH_CONTRAST_LINE_ANSWER]] += 1
-                self.processBarcode(row[BARCODE], row[PCR_RESULT], row[RESULTS_USER_RESPONSE],
-                                    row[RDT_RESULT], row[HIGH_CONTRAST_LINE_ANSWER])
+            try:
+                if row[BARCODE]:
+                    # DEBUG
+                    print('[INFO] row number: ', index)
+                    print(BARCODE, row[BARCODE])
+                    print(PCR_RESULT, row[PCR_RESULT])
+                    print(RESULTS_USER_RESPONSE, row[RESULTS_USER_RESPONSE])
+                    print(RDT_RESULT, row[RDT_RESULT])
+                    print(HIGH_CONTRAST_LINE_ANSWER,
+                        row[HIGH_CONTRAST_LINE_ANSWER])
+                    print(type(row[RDT_RESULT]))
+                    # REPORT
+                    validBarcodes += 1
+                    total += 1
+                    if row[RDT_RESULT] and (isinstance(row[RDT_RESULT], str) or not math.isnan(row[RDT_RESULT])):
+                        IntepretationResultMappings[row[RDT_RESULT]] += 1
+                    if row[PCR_RESULT] and isinstance(row[PCR_RESULT], str) or not math.isnan(row[PCR_RESULT]):
+                        PCRMappings[row[PCR_RESULT]] += 1
+                    if row[RESULTS_USER_RESPONSE]and isinstance(row[RESULTS_USER_RESPONSE], str) or not math.isnan(row[RESULTS_USER_RESPONSE]):
+                        UserResponseMappings[row[RESULTS_USER_RESPONSE]] += 1
+                    if row[HIGH_CONTRAST_LINE_ANSWER] and isinstance(row[HIGH_CONTRAST_LINE_ANSWER], str) or not math.isnan(row[HIGH_CONTRAST_LINE_ANSWER]):
+                        HighContrastLineMappings[row[HIGH_CONTRAST_LINE_ANSWER]] += 1
+                    self.processBarcode(row[BARCODE], row[PCR_RESULT], row[RESULTS_USER_RESPONSE],
+                                        row[RDT_RESULT], row[HIGH_CONTRAST_LINE_ANSWER])
 
-                # BREAK DEBUG
-                DEBUG_counter += 1
-                if (DEBUG_counter > DEBUG_AMOUNT):
-                    break
-
-        print('+++++++++++++++++++++++++++++++REPORT+++++++++++++++++++++++++++++++++++++')
-        print('----------------------------Overall Statistics----------------------------')
-        print('Total data rows: ', total)
-        print('Valid barcodes: ', validBarcodes)
-        print('High contrast Mappings', HighContrastLineMappings)
-        print('Interpretation Result Mappings', IntepretationResultMappings)
-        print('User Response Mappings', UserResponseMappings)
-        print('--------------------------Accuracy Table Comparison-----------------------')
-        print('=======Python Result========')
-        """
-            TODO: Print better table here
-        """
-        print('High Contrast Line Result Table',
-              self.resultPythonComparisonWithHighContrastLineAnswer)
-        print('PCR Result Table', self.resultPythonComparisonWithPCRResult)
-        print('User Response Result Table',
-              self.resultPythonComparisonWithUserResponse)
-        self.reportPythonResultStatistics()
-        print('=======Android Result=========')
-        print('High Contrast Line Result Table',
-              self.resultAndroidComparisonWithHighContrastLineAnswer)
-        print('PCR Result Table', self.resultAndroidComparisonWithPCRResult)
-        print('User Response Result Table',
-              self.resultAndroidComparisonWithUserResponse)
-        self.reportAndroidResultStatistics()
-        print('=======Line Count=======')
-        print('Line count table', self.lineCountResult)
-        print('~~~~~~~')
-        self.reportLineCountStatistics()
+                    # BREAK DEBUG
+                    # DEBUG_counter += 1
+                    # if (DEBUG_counter > DEBUG_AMOUNT):
+                    #     break
+            except: 
+                continue
+            finally:
+                print('+++++++++++++++++++++++++++++++REPORT+++++++++++++++++++++++++++++++++++++')
+                print('----------------------------Overall Statistics----------------------------')
+                print('Total data rows: ', total)
+                print('Valid barcodes: ', validBarcodes)
+                print('High contrast Mappings', HighContrastLineMappings)
+                print('Interpretation Result Mappings', IntepretationResultMappings)
+                print('User Response Mappings', UserResponseMappings)
+                print('--------------------------Accuracy Table Comparison-----------------------')
+                print('=======Python Result========')
+                """
+                    TODO: Print better table here
+                """
+                print('High Contrast Line Result Table')
+                self.printTable(HighContrastLineIndex.keys, self.colLabels, self.resultPythonComparisonWithHighContrastLineAnswer)
+                print('PCR Result Table')
+                self.printTable(PCRMappings.keys, self.colLabels, self.resultPythonComparisonWithPCRResult)
+                print('User Response Result Table')
+                self.printTable(UserResponseMappings.keys, self.colLabels, self.resultPythonComparisonWithUserResponse)
+                self.reportPythonResultStatistics()
+                print('=======Android Result=========')
+                print('High Contrast Line Result Table')
+                self.printTable(HighContrastLineIndex.keys, self.colLabels, self.resultAndroidComparisonWithHighContrastLineAnswer)
+                print('PCR Result Table')
+                self.printTable(PCRMappings.keys, self.colLabels, self.resultAndroidComparisonWithPCRResult)
+                print('User Response Result Table')
+                self.printTable(HighContrastLineIndex.keys, self.colLabels, self.resultAndroidComparisonWithUserResponse)
+                self.reportAndroidResultStatistics()
+                print('=======Line Count=======')
+                print('Line count table')
+                self.printTable(range(4), range(5), self.lineCountResult)
+                print('~~~~~~~')
+                self.reportLineCountStatistics()
 
     def reportPythonResultStatistics(self):
-        # High Contrast Line
-        # ========= TODO: FINISH CALCULATING THIS ACCURACY PERCENTAGE ======
-        # PCR Result
-
-        # User Reponse
-        print('')
-
-    def reportAndroidResultStatistics(self):
         # Column
         #         No interpretation = 0
         # Both = 1
@@ -306,13 +308,13 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         # No flu = 4
         # High Contrast Line
         # ROw
-        #         'oneLine': 1,
+        #  'oneLine': 1,
         # 'noneOfTheAbove': 0,
         # 'twoLines': 2,
         # 'threeLines': 3
         totalCorrect = 0
         lines = 0
-        for correctContrastLineNumber, row in enumerate(self.resultAndroidComparisonWithHighContrastLineAnswer):
+        for correctContrastLineNumber, row in enumerate(self.resultPythonComparisonWithHighContrastLineAnswer):
             totalCorrectInCurrentRow = 0
             totalInCurrentRow = 0
             for i, num in enumerate(row):
@@ -328,6 +330,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             print('True Label (Contrast Line Number):  ',
                   correctContrastLineNumber)
             print('Number of correct prediction: ', totalCorrectInCurrentRow)
+            print('Total number of Labels: ', totalInCurrentRow)
             print('Percentage Accuracy: ',
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
@@ -349,7 +352,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             # 'flu B': 2
         totalCorrect = 0
         lines = 0
-        for correctLabel, row in enumerate(self.resultAndroidComparisonWithHighContrastLineAnswer):
+        for correctLabel, row in enumerate(self.resultPythonComparisonWithPCRResult):
             totalCorrectInCurrentRow = 0
             totalInCurrentRow = 0
             for i, num in enumerate(row):
@@ -364,6 +367,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             print('True Label (PCR Result):  ',
                   correctLabel)
             print('Number of correct prediction: ', totalCorrectInCurrentRow)
+            print('Total number of Labels: ', totalInCurrentRow)
             print('Percentage Accuracy: ',
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
@@ -378,7 +382,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         # 'Positive': 1
         totalCorrect = 0
         lines = 0
-        for correctLabel, row in enumerate(self.resultAndroidComparisonWithHighContrastLineAnswer):
+        for correctLabel, row in enumerate(self.resultPythonComparisonWithUserResponse):
             totalCorrectInCurrentRow = 0
             totalInCurrentRow = 0
             for i, num in enumerate(row):
@@ -392,6 +396,115 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             print('True Label (User Response Result):  ',
                   correctLabel)
             print('Number of correct prediction: ', totalCorrectInCurrentRow)
+            print('Total number of Labels: ', totalInCurrentRow)
+            print('Percentage Accuracy: ',
+                  totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
+            print('~~~~~~~~')
+
+        print('Total number of PCR Result data: ', lines)
+        print('Number of correct prediction: ', totalCorrect)
+        print('Percentage correct: ', totalCorrect /
+              lines if lines != 0 else 'N/A')
+        print('~~~~~~~~~~~~')
+
+    def reportAndroidResultStatistics(self):
+        # Column
+        #         No interpretation = 0
+        # Both = 1
+        # testA = 2
+        # testB = 3
+        # No flu = 4
+        # High Contrast Line
+        # ROw
+        #  'oneLine': 1,
+        # 'noneOfTheAbove': 0,
+        # 'twoLines': 2,
+        # 'threeLines': 3
+        totalCorrect = 0
+        lines = 0
+        for correctContrastLineNumber, row in enumerate(self.resultAndroidComparisonWithHighContrastLineAnswer):
+            totalCorrectInCurrentRow = 0
+            totalInCurrentRow = 0
+            for i, num in enumerate(row):
+                # TODO: not sure if this is correct. Ask CJ!
+                if (correctContrastLineNumber == 0 and i == 0) or \
+                    ((correctContrastLineNumber == 1 and i == 4)) or \
+                    (correctContrastLineNumber == 2 and (i == 2 or i == 3)) or \
+                        (correctContrastLineNumber == 3 and i == 1):
+                    totalCorrect += num
+                    totalCorrectInCurrentRow += num
+                lines += num
+                totalInCurrentRow += num
+            print('True Label (Contrast Line Number):  ',
+                  correctContrastLineNumber)
+            print('Number of correct prediction: ', totalCorrectInCurrentRow)
+            print('Total number of Labels: ', totalInCurrentRow)
+            print('Percentage Accuracy: ',
+                  totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
+            print('~~~~~~~~')
+
+        print('Total number of high contrast line data: ', lines)
+        print('Number of correct prediction: ', totalCorrect)
+        print('Percentage correct: ', totalCorrect /
+              lines if lines != 0 else 'N/A')
+        print('~~~~~~~~~~~~')
+                # Column
+        #         No interpretation = 0
+        # Both = 1
+        # testA = 2
+        # testB = 3
+        # No flu = 4
+        # PCR Result
+            #   'negative': 0,
+            # 'flu A': 1,
+            # 'flu B': 2
+        totalCorrect = 0
+        lines = 0
+        for correctLabel, row in enumerate(self.resultAndroidComparisonWithPCRResult):
+            totalCorrectInCurrentRow = 0
+            totalInCurrentRow = 0
+            for i, num in enumerate(row):
+                # TODO: not sure if this is correct. Ask CJ!
+                if (correctLabel == 0 and (i == 4 or i == 0)) or \
+                    ((correctLabel == 1 and (i == 2 or i == 1))) or \
+                    (correctLabel == 2 and (i == 1 or i == 3)):
+                    totalCorrect += num
+                    totalCorrectInCurrentRow += num
+                lines += num
+                totalInCurrentRow += num
+            print('True Label (PCR Result):  ',
+                  correctLabel)
+            print('Number of correct prediction: ', totalCorrectInCurrentRow)
+            print('Total number of Labels: ', totalInCurrentRow)
+            print('Percentage Accuracy: ',
+                  totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
+            print('~~~~~~~~')
+
+        print('Total number of PCR Result data: ', lines)
+        print('Number of correct prediction: ', totalCorrect)
+        print('Percentage correct: ', totalCorrect /
+              lines if lines != 0 else 'N/A')
+        print('~~~~~~~~~~~~')
+        # User Reponse
+        # 'Negative': 0,
+        # 'Positive': 1
+        totalCorrect = 0
+        lines = 0
+        for correctLabel, row in enumerate(self.resultAndroidComparisonWithUserResponse):
+            totalCorrectInCurrentRow = 0
+            totalInCurrentRow = 0
+            for i, num in enumerate(row):
+                # TODO: not sure if this is correct. Ask CJ!
+                if (correctLabel == 0 and (i == 0)) or \
+                    ((correctLabel == 1 and (i != 0))):
+                    totalCorrect += num
+                    totalCorrectInCurrentRow += num
+                lines += num
+                totalInCurrentRow += num
+            print('True Label (User Response Result):  ',
+                  correctLabel)
+            print('Number of correct prediction: ', totalCorrectInCurrentRow)
+            print('Total number of Labels: ', totalInCurrentRow)
             print('Percentage Accuracy: ',
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
@@ -414,6 +527,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 lines += num
             print('True Label (Number of line):  ', row)
             print('Number of correct prediction: ', totalCorrectInCurrentRow)
+            print('Total number of Labels: ', totalInCurrentRow)
             print('Percentage Accuracy: ',
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
@@ -423,3 +537,23 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         print('Percentage correct: ', totalCorrect /
               lines if lines != 0 else 'N/A')
         print('~~~~~~~~~~~~')
+        print('Fail Detection Count', self.failDetectionCount)
+        print('Fail detection list', self.failDetectionDetailList)
+
+    def printTable(self, rowLabels, colLabels, table):
+        # if (len(table) > 1):
+        #     s = "      "
+        #     for colLabel in colLabels:
+        #         print(colLabel),
+        #         print('| ')
+
+        # for i, row in enumerate(table):
+        #     print(rowLabels[i]), 
+        #     print('| ')
+        #     for j, col in enumerate(row):
+        #         print(col), 
+        #         print(' ')
+
+        for i, row in enumerate(table):
+            print(row)
+
