@@ -671,7 +671,7 @@ class ImageProcessor:
         # plt.scatter(np.array(maxtab)[:,0], np.array(maxtab)[:,1], color='blue')
         # plt.scatter(np.array(mintab)[:,0], np.array(mintab)[:,1], color='red')
         # plt.show()
-        return len(maxtab)
+        return maxtab, len(maxtab)
 
 
     def interpretResult(self, src):
@@ -767,7 +767,14 @@ class ImageProcessor:
             print('[INFO] lines result', control, testA, testB)
             # show_image(result)
             cv.imwrite('result.png', result)
-            linesResult = self.detectLinesWithPeak(result)
+            maxtab, linesResult = self.detectLinesWithPeak(result)
+            # for col, val, width in maxtab:
+            #     if col > TEST_A_LINE_POSITION - 10 and col < TEST_A_LINE_POSITION + 10:
+            #         testA = True
+            #     if col > TEST_B_LINE_POSITION - 10 and col < TEST_B_LINE_POSITION + 10:
+            #         testB = True
+            #     if col > CONTROL_LINE_POSITION - 10 and col < CONTROL_LINE_POSITION + 10:
+            #         control = True
             with open('interpretResult.txt', 'w') as file:
                 file.write(str(InterpretationResult(result, control, testA, testB, linesResult))) 
             print('[INFO] detection result: ', str(InterpretationResult(result, control, testA, testB, linesResult)))

@@ -7,6 +7,7 @@ from urlConstants import (
     S3_URL_BASE_PATH, TYPE, BARCODES, RDT_SCAN, ENHANCED_SCAN, MANUAL_PHOTO
 )
 import math
+import json
 
 SECRET_PATH = 'keys/cough_photos_key.txt'
 STATUS = 'Status'
@@ -65,10 +66,10 @@ PCRMappingsIndex = {
 
 IntepretationResultMappingsIndex = {
     'Both': 0,
-    'Negative': 0,
-    'Flu B': 0,
-    'Flu A': 0,
-    'No control line': 0
+    'Negative': 1,
+    'Flu B': 2,
+    'Flu A': 3,
+    'No control line': 4
 }
 
 
@@ -229,7 +230,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         total = 0
         barcodes = []
         # ================ DEBUG =========================
-        DEBUG_AMOUNT = 10
+        DEBUG_AMOUNT = 30
         DEBUG_counter = 1
 
         for index, row in df.iterrows():
@@ -247,7 +248,6 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                     print(type(row[RDT_RESULT]))
                     # REPORT
                     validBarcodes += 1
-                    total += 1
                     if row[RDT_RESULT] and (isinstance(row[RDT_RESULT], str) or not math.isnan(row[RDT_RESULT])):
                         IntepretationResultMappings[row[RDT_RESULT]] += 1
                     if row[PCR_RESULT] and isinstance(row[PCR_RESULT], str) or not math.isnan(row[PCR_RESULT]):
@@ -263,6 +263,8 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                     # DEBUG_counter += 1
                     # if (DEBUG_counter > DEBUG_AMOUNT):
                     #     break
+                else:
+                    total += 1
             except: 
                 continue
             finally:
@@ -275,9 +277,6 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 print('User Response Mappings', UserResponseMappings)
                 print('--------------------------Accuracy Table Comparison-----------------------')
                 print('=======Python Result========')
-                """
-                    TODO: Print better table here
-                """
                 print('High Contrast Line Result Table')
                 self.printTable(HighContrastLineIndex.keys, self.colLabels, self.resultPythonComparisonWithHighContrastLineAnswer)
                 print('PCR Result Table')
@@ -314,6 +313,8 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         # 'threeLines': 3
         totalCorrect = 0
         lines = 0
+        result = []
+        currResult = {}
         for correctContrastLineNumber, row in enumerate(self.resultPythonComparisonWithHighContrastLineAnswer):
             totalCorrectInCurrentRow = 0
             totalInCurrentRow = 0
@@ -328,18 +329,30 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 lines += num
                 totalInCurrentRow += num
             print('True Label (Contrast Line Number):  ',
-                  correctContrastLineNumber)
+                                    {v: k for k, v in HighContrastLineIndex.items()}[correctContrastLineNumber])
             print('Number of correct prediction: ', totalCorrectInCurrentRow)
             print('Total number of Labels: ', totalInCurrentRow)
             print('Percentage Accuracy: ',
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
+            currResult[{v: k for k, v in HighContrastLineIndex.items()}[correctContrastLineNumber]] = {
+                'androidResult' : totalCorrectInCurrentRow,
+                'result': totalInCurrentRow,
+                'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
+            }
 
         print('Total number of high contrast line data: ', lines)
         print('Number of correct prediction: ', totalCorrect)
         print('Percentage correct: ', totalCorrect /
               lines if lines != 0 else 'N/A')
         print('~~~~~~~~~~~~')
+        currResult['overall'] = {
+            'androidResult': totalCorrect,
+            'result': lines,
+            'accuracy': totalCorrect /
+              lines if lines != 0 else 'N/A'
+        }
+        result.append({'High Contrast': currResult})
                 # Column
         #         No interpretation = 0
         # Both = 1
@@ -352,6 +365,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             # 'flu B': 2
         totalCorrect = 0
         lines = 0
+        currResult = {}
         for correctLabel, row in enumerate(self.resultPythonComparisonWithPCRResult):
             totalCorrectInCurrentRow = 0
             totalInCurrentRow = 0
@@ -365,23 +379,36 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 lines += num
                 totalInCurrentRow += num
             print('True Label (PCR Result):  ',
-                  correctLabel)
+                  {v: k for k, v in PCRMappingsIndex.items()}[correctLabel])
             print('Number of correct prediction: ', totalCorrectInCurrentRow)
             print('Total number of Labels: ', totalInCurrentRow)
             print('Percentage Accuracy: ',
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
+            currResult[{v: k for k, v in PCRMappingsIndex.items()}[correctLabel]] = {
+                'androidResult' : totalCorrectInCurrentRow,
+                'result': totalInCurrentRow,
+                'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
+            }
 
         print('Total number of PCR Result data: ', lines)
         print('Number of correct prediction: ', totalCorrect)
         print('Percentage correct: ', totalCorrect /
               lines if lines != 0 else 'N/A')
         print('~~~~~~~~~~~~')
+        currResult['overall'] = {
+            'androidResult': totalCorrect,
+            'result': lines,
+            'accuracy': totalCorrect /
+              lines if lines != 0 else 'N/A'
+        }
+        result.append({'PCR': currResult})
         # User Reponse
         # 'Negative': 0,
         # 'Positive': 1
         totalCorrect = 0
         lines = 0
+        currResult = {}
         for correctLabel, row in enumerate(self.resultPythonComparisonWithUserResponse):
             totalCorrectInCurrentRow = 0
             totalInCurrentRow = 0
@@ -394,18 +421,32 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 lines += num
                 totalInCurrentRow += num
             print('True Label (User Response Result):  ',
-                  correctLabel)
+                  {v: k for k, v in UserResponseIndex.items()}[correctLabel])
             print('Number of correct prediction: ', totalCorrectInCurrentRow)
             print('Total number of Labels: ', totalInCurrentRow)
             print('Percentage Accuracy: ',
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
+            currResult[{v: k for k, v in UserResponseIndex.items()}[correctLabel]] = {
+                'androidResult' : totalCorrectInCurrentRow,
+                'result': totalInCurrentRow,
+                'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
+            }
 
         print('Total number of PCR Result data: ', lines)
         print('Number of correct prediction: ', totalCorrect)
         print('Percentage correct: ', totalCorrect /
               lines if lines != 0 else 'N/A')
         print('~~~~~~~~~~~~')
+        currResult['overall'] = {
+            'androidResult': totalCorrect,
+            'result': lines,
+            'accuracy': totalCorrect /
+              lines if lines != 0 else 'N/A'
+        }
+        result.append({'User Response': currResult})
+
+        self.printResultTable(result)
 
     def reportAndroidResultStatistics(self):
         # Column
@@ -422,6 +463,8 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         # 'threeLines': 3
         totalCorrect = 0
         lines = 0
+        result = []
+        currResult = {}
         for correctContrastLineNumber, row in enumerate(self.resultAndroidComparisonWithHighContrastLineAnswer):
             totalCorrectInCurrentRow = 0
             totalInCurrentRow = 0
@@ -435,19 +478,33 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                     totalCorrectInCurrentRow += num
                 lines += num
                 totalInCurrentRow += num
+            # print(list(HighContrastLineIndex.keys()))
             print('True Label (Contrast Line Number):  ',
-                  correctContrastLineNumber)
+                  {v: k for k, v in HighContrastLineIndex.items()}[correctContrastLineNumber])
+        
             print('Number of correct prediction: ', totalCorrectInCurrentRow)
             print('Total number of Labels: ', totalInCurrentRow)
             print('Percentage Accuracy: ',
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
+            currResult[{v: k for k, v in HighContrastLineIndex.items()}[correctContrastLineNumber]] = {
+                'androidResult' : totalCorrectInCurrentRow,
+                'result': totalInCurrentRow,
+                'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
+            }
 
         print('Total number of high contrast line data: ', lines)
         print('Number of correct prediction: ', totalCorrect)
         print('Percentage correct: ', totalCorrect /
               lines if lines != 0 else 'N/A')
         print('~~~~~~~~~~~~')
+        currResult['overall'] = {
+            'androidResult': totalCorrect,
+            'result': lines,
+            'accuracy': totalCorrect /
+              lines if lines != 0 else 'N/A'
+        }
+        result.append({'High Contrast': currResult})
                 # Column
         #         No interpretation = 0
         # Both = 1
@@ -460,6 +517,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             # 'flu B': 2
         totalCorrect = 0
         lines = 0
+        currResult = {}
         for correctLabel, row in enumerate(self.resultAndroidComparisonWithPCRResult):
             totalCorrectInCurrentRow = 0
             totalInCurrentRow = 0
@@ -473,23 +531,37 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 lines += num
                 totalInCurrentRow += num
             print('True Label (PCR Result):  ',
-                  correctLabel)
+                  {v: k for k, v in PCRMappingsIndex.items()}[correctLabel])
             print('Number of correct prediction: ', totalCorrectInCurrentRow)
             print('Total number of Labels: ', totalInCurrentRow)
             print('Percentage Accuracy: ',
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
+            currResult[{v: k for k, v in PCRMappingsIndex.items()}[correctLabel]] = {
+                'androidResult' : totalCorrectInCurrentRow,
+                'result': totalInCurrentRow,
+                'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
+            }
 
         print('Total number of PCR Result data: ', lines)
         print('Number of correct prediction: ', totalCorrect)
         print('Percentage correct: ', totalCorrect /
               lines if lines != 0 else 'N/A')
         print('~~~~~~~~~~~~')
+        currResult['overall'] = {
+            'androidResult': totalCorrect,
+            'result': lines,
+            'accuracy': totalCorrect /
+              lines if lines != 0 else 'N/A'
+        }
+        result.append({'PCR': currResult})
         # User Reponse
         # 'Negative': 0,
         # 'Positive': 1
         totalCorrect = 0
         lines = 0
+        currResult = {}
+
         for correctLabel, row in enumerate(self.resultAndroidComparisonWithUserResponse):
             totalCorrectInCurrentRow = 0
             totalInCurrentRow = 0
@@ -502,18 +574,51 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 lines += num
                 totalInCurrentRow += num
             print('True Label (User Response Result):  ',
-                  correctLabel)
+                  {v: k for k, v in UserResponseIndex.items()}[correctLabel])
             print('Number of correct prediction: ', totalCorrectInCurrentRow)
             print('Total number of Labels: ', totalInCurrentRow)
             print('Percentage Accuracy: ',
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
+            currResult[{v: k for k, v in UserResponseIndex.items()}[correctLabel]] = {
+                'androidResult' : totalCorrectInCurrentRow,
+                'result': totalInCurrentRow,
+                'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
+            }
 
         print('Total number of PCR Result data: ', lines)
         print('Number of correct prediction: ', totalCorrect)
         print('Percentage correct: ', totalCorrect /
               lines if lines != 0 else 'N/A')
         print('~~~~~~~~~~~~')
+        currResult['overall'] = {
+            'androidResult': totalCorrect,
+            'result': lines,
+            'accuracy': totalCorrect /
+              lines if lines != 0 else 'N/A'
+        }
+        result.append({'User Response': currResult})
+
+        self.printResultTable(result)
+
+
+    def printResultTable(self, result):
+        print('~~~~~~~~~~~~~~~~~~~~~~~~~')
+        lines = ["", "", "", "", "", "", "", ""]
+        print(result)
+        for category in result:
+            lines[0] += str(list(category.keys())[0]) + "                               "
+            categoryResult = category[list(category.keys())[0]]
+            i = 1
+            print(categoryResult)
+            for k in categoryResult:
+                v = categoryResult[k]
+                # print(str(k) + " " + str(v['accuracy']) + "% " + "(" + str(v['androidResult']) + "/" + str(v['result']) + ")     ")
+                lines[i] += str(k) + " " + str(v['accuracy'] * 100) + "% " + "(" + str(v['androidResult']) + "/" + str(v['result']) + ")                   "
+                i += 1
+                # print(lines[i])
+        for line in lines:
+            print(line)
 
     def reportLineCountStatistics(self):
         totalCorrect = 0
@@ -537,8 +642,9 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         print('Percentage correct: ', totalCorrect /
               lines if lines != 0 else 'N/A')
         print('~~~~~~~~~~~~')
-        print('Fail Detection Count', self.failDetectionCount)
-        print('Fail detection list', self.failDetectionDetailList)
+        # print('Fail Detection Count', self.failDetectionCount)
+        # print('Fail detection list')
+        # print(json.dumps(self.failDetectionDetailList, sort_keys=True, indent=4))
 
     def printTable(self, rowLabels, colLabels, table):
         # if (len(table) > 1):
