@@ -9,6 +9,10 @@ from urlConstants import (
 import math
 import json
 
+"""
+    TODO: Figure the peak line detection + why python results is different from android
+"""
+
 SECRET_PATH = 'keys/cough_photos_key.txt'
 STATUS = 'Status'
 PCR_RESULT = 'ASPREN: PCR Result'

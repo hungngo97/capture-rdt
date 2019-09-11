@@ -8,7 +8,7 @@ import time
 from constants import (OVER_EXP_THRESHOLD, UNDER_EXP_THRESHOLD, OVER_EXP_WHITE_COUNT,
                        VIEW_FINDER_SCALE_H, VIEW_FINDER_SCALE_W, SHARPNESS_THRESHOLD,
                        CROP_RATIO, MIN_MATCH_COUNT, POSITION_THRESHOLD, ANGLE_THRESHOLD,
-                       CONTROL_LINE_POSITION, TEST_A_LINE_POSITION, TEST_B_LINE_POSITION,
+                       CONTROL_LINE_POSITION,
                        CONTROL_LINE_COLOR_UPPER, CONTROL_LINE_COLOR_LOWER, CONTROL_LINE_POSITION_MIN,
                        CONTROL_LINE_POSITION_MAX, CONTROL_LINE_MIN_HEIGHT, CONTROL_LINE_MIN_WIDTH,
                        CONTROL_LINE_MAX_WIDTH, FIDUCIAL_MAX_WIDTH, FIDUCIAL_MIN_HEIGHT, FIDUCIAL_MIN_WIDTH,
@@ -16,9 +16,13 @@ from constants import (OVER_EXP_THRESHOLD, UNDER_EXP_THRESHOLD, OVER_EXP_WHITE_C
                        RESULT_WINDOW_RECT_HEIGHT, RESULT_WINDOW_RECT_WIDTH_PADDING, FIDUCIAL_COUNT,
                        FIDUCIAL_DISTANCE, ANGLE_THRESHOLD, LINE_SEARCH_WIDTH, CONTROL_LINE_POSITION, 
                        TEST_A_LINE_POSITION, TEST_B_LINE_POSITION, INTENSITY_THRESHOLD, 
-                       CONTROL_INTENSITY_PEAK_THRESHOLD, TEST_INTENSITY_PEAK_THRESHOLD)
+                       CONTROL_INTENSITY_PEAK_THRESHOLD, TEST_INTENSITY_PEAK_THRESHOLD, DETECTION_RANGE)
 from result import (ExposureResult, CaptureResult, InterpretationResult, SizeResult)
 from utils import (show_image, resize_image, Point, Rect, crop_rect, peakdet)
+
+"""
+    TODO: debug 63299731
+"""
 
 class ImageProcessor:
     def __init__(self):
@@ -664,12 +668,15 @@ class ImageProcessor:
         colLightness = [255] - colLightness
         print('[INFO] lightness shape', colLightness.shape)
         # Find peak and peak should correspond to lines
-        maxtab, mintab = peakdet(colLightness, 40.0)
+        maxtab, mintab = peakdet(colLightness, 30.0)
         print('Max', maxtab)
+        print('Min', mintab)
         print('Total strip count', len(maxtab))
         # plt.plot(colLightness)
-        # plt.scatter(np.array(maxtab)[:,0], np.array(maxtab)[:,1], color='blue')
-        # plt.scatter(np.array(mintab)[:,0], np.array(mintab)[:,1], color='red')
+        # if len(maxtab) > 0:
+        #     plt.scatter(np.array(maxtab)[:,0], np.array(maxtab)[:,1], color='blue')
+        # if len(mintab) > 0:
+        #     plt.scatter(np.array(mintab)[:,0], np.array(mintab)[:,1], color='red')
         # plt.show()
         return maxtab, len(maxtab)
 
@@ -720,7 +727,7 @@ class ImageProcessor:
         result = self.cropResultWindow(colorImg, boundary)
         if result is None:
             return None
-        # show_image(result)
+        show_image(result)
         cv.imwrite('cropResult.png', result)
         # print('[INFO] cropResultWindow res:', result)
         control, testA, testB = False, False, False
@@ -731,55 +738,65 @@ class ImageProcessor:
         # result = self.correctGamma(result, 0.75)
         # TODO: do we need to do correct Gamma?
         #  ===== DEBUG ======
+        # show_image(result)
         # control = self.readControlLine(result, Point(CONTROL_LINE_POSITION, 0))
         # testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
         # testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
-        # print('[INFO] lines result', control, testA, testB)
-        # # show_image(result)
-        # cv.imwrite('result.png', result)
-        # linesResult = self.detectLinesWithPeak(result)
-        # with open('interpretResult.txt', 'w') as file:
-        #     file.write(str(InterpretationResult(result, control, testA, testB))) 
-        # return InterpretationResult(result, control, testA, testB)
+        # show_image(result)
+        cv.imwrite('result.png', result)
+        maxtab, linesResult = self.detectLinesWithPeak(result)
+        for col, val, width in maxtab:
+            if col > TEST_A_LINE_POSITION - DETECTION_RANGE and col < TEST_A_LINE_POSITION + DETECTION_RANGE:
+                testA = True
+            if col > TEST_B_LINE_POSITION - DETECTION_RANGE and col < TEST_B_LINE_POSITION + DETECTION_RANGE:
+                testB = True
+            if col > CONTROL_LINE_POSITION - DETECTION_RANGE and col < CONTROL_LINE_POSITION + DETECTION_RANGE:
+                control = True
+        with open('interpretResult.txt', 'w') as file:
+            file.write(str(InterpretationResult(result, control, testA, testB, linesResult))) 
+        print('[INFO] detection result: ', str(InterpretationResult(result, control, testA, testB, linesResult)))
+        print('[INFO] lines result', control, testA, testB)
+        return InterpretationResult(result, control, testA, testB, linesResult)
         
-        try:
-            (x1, y1), (x2, y2) = self.getViewfinderRect(img)
-            print('[INFO] top left br' , x1, y1, x2, y2)
-            roi = colorImg[x1:x2, y1:y2]
-            # cropped = cv.rectangle(img,(y1, x1),(y2, x2),(0,255,0),5)
-            # show_image(cropped)
-            # show_image(roi)
-            result = self.cropResultWindow(colorImg, boundary)
-            # show_image(result)
-            cv.imwrite('cropResult.png', result)
-            # print('[INFO] cropResultWindow res:', result)
-            control, testA, testB = False, False, False
+        # try:
+        #     (x1, y1), (x2, y2) = self.getViewfinderRect(img)
+        #     print('[INFO] top left br' , x1, y1, x2, y2)
+        #     roi = colorImg[x1:x2, y1:y2]
+        #     # cropped = cv.rectangle(img,(y1, x1),(y2, x2),(0,255,0),5)
+        #     # show_image(cropped)
+        #     # show_image(roi)
+        #     result = self.cropResultWindow(colorImg, boundary)
+        #     show_image(result)
+        #     cv.imwrite('cropResult.png', result)
+        #     # print('[INFO] cropResultWindow res:', result)
+        #     control, testA, testB = False, False, False
 
-            if (result.shape[0] == 0 and result.shape[1] == 0):
-                return InterpretationResult(result, False, False, False)
-            result = self.enhanceResultWindow(result, (5, result.shape[1]))
-            # result = self.correctGamma(result, 0.75)
-            # TODO: do we need to do correct Gamma?
+        #     if (result.shape[0] == 0 and result.shape[1] == 0):
+        #         return InterpretationResult(result, False, False, False)
+        #     result = self.enhanceResultWindow(result, (5, result.shape[1]))
+        #     # result = self.correctGamma(result, 0.75)
+        #     # TODO: do we need to do correct Gamma?
 
-            control = self.readControlLine(result, Point(CONTROL_LINE_POSITION, 0))
-            testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
-            testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
-            print('[INFO] lines result', control, testA, testB)
-            # show_image(result)
-            cv.imwrite('result.png', result)
-            maxtab, linesResult = self.detectLinesWithPeak(result)
-            # for col, val, width in maxtab:
-            #     if col > TEST_A_LINE_POSITION - 10 and col < TEST_A_LINE_POSITION + 10:
-            #         testA = True
-            #     if col > TEST_B_LINE_POSITION - 10 and col < TEST_B_LINE_POSITION + 10:
-            #         testB = True
-            #     if col > CONTROL_LINE_POSITION - 10 and col < CONTROL_LINE_POSITION + 10:
-            #         control = True
-            with open('interpretResult.txt', 'w') as file:
-                file.write(str(InterpretationResult(result, control, testA, testB, linesResult))) 
-            print('[INFO] detection result: ', str(InterpretationResult(result, control, testA, testB, linesResult)))
-            return InterpretationResult(result, control, testA, testB, linesResult)
-        except: 
-            # Not detected found
-            print("Something went wrong")
-            return None
+        #     control = self.readControlLine(result, Point(CONTROL_LINE_POSITION, 0))
+        #     testA = self.readTestLine(result, Point(TEST_A_LINE_POSITION, 0))
+        #     testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
+        #     print('[INFO] lines result', control, testA, testB)
+        #     # show_image(result)
+        #     cv.imwrite('result.png', result)
+        #     maxtab, linesResult = self.detectLinesWithPeak(result)
+        #     for col, val, width in maxtab:
+        #         if col > TEST_A_LINE_POSITION - 10 and col < TEST_A_LINE_POSITION + 10:
+        #             testA = True
+        #         if col > TEST_B_LINE_POSITION - 10 and col < TEST_B_LINE_POSITION + 10:
+        #             testB = True
+        #         if col > CONTROL_LINE_POSITION - 10 and col < CONTROL_LINE_POSITION + 10:
+        #             control = True
+        #     with open('interpretResult.txt', 'w') as file:
+        #         file.write(str(InterpretationResult(result, control, testA, testB, linesResult))) 
+        #     print('[INFO] detection result: ', str(InterpretationResult(result, control, testA, testB, linesResult)))
+        #     return InterpretationResult(result, control, testA, testB, linesResult)
+        # except Exception as e: 
+        #     # Not detected found
+        #     print("Something went wrong")
+        #     print(e)
+        #     return None
