@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 from urlConstants import (
     S3_URL_BASE_PATH, TYPE, BARCODES, RDT_SCAN, ENHANCED_SCAN, MANUAL_PHOTO
 )
+from utils import (
+    calculateF1Score, calculatePrecisionScore, calculateRecallScore
+)
 import math
 import json
 
@@ -264,9 +267,9 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                                         row[RDT_RESULT], row[HIGH_CONTRAST_LINE_ANSWER])
 
                     # BREAK DEBUG
-                    # DEBUG_counter += 1
-                    # if (DEBUG_counter > DEBUG_AMOUNT):
-                    #     break
+                    DEBUG_counter += 1
+                    if (DEBUG_counter > DEBUG_AMOUNT):
+                        break
                 else:
                     total += 1
             except: 
@@ -571,8 +574,8 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             totalInCurrentRow = 0
             for i, num in enumerate(row):
                 # TODO: not sure if this is correct. Ask CJ!
-                if (correctLabel == 0 and (i == 0)) or \
-                    ((correctLabel == 1 and (i != 0))):
+                if (correctLabel == 0 and (i == 4)) or \
+                    ((correctLabel == 1 and (i != 4))):
                     totalCorrect += num
                     totalCorrectInCurrentRow += num
                 lines += num
@@ -602,9 +605,26 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
               lines if lines != 0 else 'N/A'
         }
         result.append({'User Response': currResult})
-
+        self.printF1ScoreUserResponse(currResult)
         self.printResultTable(result)
 
+    def printF1ScoreUserResponse(self, result):
+        print('~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        f1Score, precision, recall = self.calculateF1ScoreUserResponse(result)
+        print('F1 Score: ', f1Score)
+        print('Precision: ', precision)
+        print('Recall: ', recall)
+
+
+    def calculateF1ScoreUserResponse(self, result):
+        truePositive = result['Positive']['androidResult']
+        falsePositive = result['Negative']['result'] - result['Negative']['androidResult']
+        falseNegative = result['Positive']['result'] - result['Positive']['androidResult']
+        trueNegative = result['Negative']['androidResult']
+        precision = calculatePrecisionScore(truePositive, falsePositive)
+        recall = calculateRecallScore(truePositive, falseNegative)
+        f1Score = calculateF1Score(precision, recall)
+        return (f1Score, precision, recall)
 
     def printResultTable(self, result):
         print('~~~~~~~~~~~~~~~~~~~~~~~~~')

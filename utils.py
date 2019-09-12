@@ -12,6 +12,26 @@ FILES_TO_DELETE = [
 ]
 
 
+def calculatePrecisionScore(truePositive, falsePositive):
+    if truePositive + falsePositive > 0:
+        return truePositive / (truePositive + falsePositive)
+    return 'N/A'
+
+
+def calculateRecallScore(truePositive, falseNegative):
+    if truePositive + falseNegative > 0:
+        return truePositive / (truePositive + falseNegative)
+    return 'N/A'
+
+
+def calculateF1Score(precision, recall):
+    if precision == 'N/A' or recall == 'N/A':
+        return 'N/A'
+    if precision + recall > 0:
+        return 2 * (precision * recall) / (precision + recall)
+    return 'N/A'
+
+
 def peakdet(v, delta, x=None):
     """
     Converted from MATLAB script at http://billauer.co.il/peakdet.html

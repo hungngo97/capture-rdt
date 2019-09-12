@@ -47,6 +47,7 @@ FLU_A_SUBSUBDIR = 'FluA'
 FLU_B_SUBSUBDIR = 'FluB'
 FLU_AB_SUBSUBDIR = 'FluAB'
 NO_FLU_SUBSUBDIR = 'noFlu'
+INVALID_LINE_SUBSUBDIR = 'INVALID_LINE_SUBSUBDIR'
 NO_CONTROL_AREA_FOUND = 'NO_CONTROL_AREA_FOUND'
 CANNOT_DETECT = 'CANNOT_DETECT'
 
@@ -94,16 +95,29 @@ class ImageProcessorScrape(ImageProcessor):
             # Interpret Result
             interpretResult = ImageProcessor.interpretResult(
                 self, imageFileName)
+            # if (interpretResult == None):
+            #     DIR_PATH = ROOT_DETECTION_DIR + '/' + FALSE_SUBDIR + '/' + NO_CONTROL_AREA_FOUND
+            # elif (interpretResult.testA and interpretResult.testB):
+            #     DIR_PATH += '/' + FLU_AB_SUBSUBDIR
+            # elif (interpretResult.testA):
+            #     DIR_PATH += '/' + FLU_A_SUBSUBDIR
+            # elif (interpretResult.testB):
+            #     DIR_PATH += '/' + FLU_B_SUBSUBDIR
+            # else:
+            #     DIR_PATH += '/' + NO_FLU_SUBSUBDIR
+
             if (interpretResult == None):
                 DIR_PATH = ROOT_DETECTION_DIR + '/' + FALSE_SUBDIR + '/' + NO_CONTROL_AREA_FOUND
-            elif (interpretResult.testA and interpretResult.testB):
+            elif (interpretResult.control and interpretResult.testA and interpretResult.testB):
                 DIR_PATH += '/' + FLU_AB_SUBSUBDIR
-            elif (interpretResult.testA):
+            elif (interpretResult.control and interpretResult.testA):
                 DIR_PATH += '/' + FLU_A_SUBSUBDIR
-            elif (interpretResult.testB):
+            elif (interpretResult.control and interpretResult.testB):
                 DIR_PATH += '/' + FLU_B_SUBSUBDIR
-            else:
+            elif (interpretResult.control):
                 DIR_PATH += '/' + NO_FLU_SUBSUBDIR
+            else:  # Include invalid cases like only testA is true but controlLine is false etc.
+                DIR_PATH += '/' + INVALID_LINE_SUBSUBDIR
 
             DIR_PATH += '/' + imageName
 

@@ -21,7 +21,12 @@ from result import (ExposureResult, CaptureResult, InterpretationResult, SizeRes
 from utils import (show_image, resize_image, Point, Rect, crop_rect, peakdet)
 
 """
-    TODO: debug 63299731
+    TODO: 
+    * debug 63299731, testAB, testB, testA maybe ask CJ about it (NOT DONE)
+    *** F1 score and specificity (NOT TESTED)
+    *** test strip boundary column, it gives you the coordinates of the detected RDT. 
+     so, you dont have to run SIFT. you can just use that to those points to crop the
+      RDT and correct perspective. (NOT DONE)
 """
 
 class ImageProcessor:
@@ -727,7 +732,7 @@ class ImageProcessor:
         result = self.cropResultWindow(colorImg, boundary)
         if result is None:
             return None
-        show_image(result)
+        # show_image(result)
         cv.imwrite('cropResult.png', result)
         # print('[INFO] cropResultWindow res:', result)
         control, testA, testB = False, False, False
