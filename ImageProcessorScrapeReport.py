@@ -22,6 +22,7 @@ PCR_RESULT = 'ASPREN: PCR Result'
 RESULTS_USER_RESPONSE = 'Results: Shown to User Based Only on User Responses'
 RDT_RESULT = 'RDT Result: What the RDT Algorithm Interpreted'
 HIGH_CONTRAST_LINE_ANSWER = 'High Contrast Line Answer'
+TEST_STRIP_BOUNDARY = 'Test Strip Boundary'
 BARCODE = 'Barcode'
 SECRET = ''
 with open(SECRET_PATH, 'r') as file:
@@ -111,13 +112,19 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         self.failDetectionDetailList = []
 
     def processBarcode(self, barcode, pcr_result, results_user_response,
-                       rdt_result, high_contrast_line_answer):
+                       rdt_result, high_contrast_line_answer, test_strip_boundary):
         print('[INFO] start processBarcode..')
         print('[PREPROCESS] barcode', barcode)
         if barcode is None or not barcode or math.isnan(barcode):
             return None
         # Convert number barcode to string
         barcode = str(int(barcode))
+
+        # convert test_strip_boundary to dictionary
+        """
+            TODO: FINISH
+        
+        """
         print('[INFO] processing barcode', barcode)
 
         URL_PATH = str(S3_URL_BASE_PATH) + \
@@ -177,16 +184,30 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         print('[INFO] start comparePCRResult')
         row_index = PCRMappingsIndex[pcr_result]
         col_index = 0
+        # if (interpretResult == None):
+        #     col_index += 0
+        # elif (interpretResult.testA and interpretResult.testB):
+        #     col_index += 1
+        # elif (interpretResult.testA):
+        #     col_index += 2
+        # elif (interpretResult.testB):
+        #     col_index += 3
+        # else:
+        #     col_index += 4
+
         if (interpretResult == None):
             col_index += 0
-        elif (interpretResult.testA and interpretResult.testB):
+        elif (interpretResult.control and interpretResult.testA and interpretResult.testB):
             col_index += 1
-        elif (interpretResult.testA):
+        elif (interpretResult.control and interpretResult.testA):
             col_index += 2
-        elif (interpretResult.testB):
+        elif (interpretResult.control and interpretResult.testB):
             col_index += 3
-        else:
+        elif (interpretResult.control):
             col_index += 4
+        else:  # Include invalid cases like only testA is true but controlLine is false etc.
+            col_index += 0
+
         print('[INFO] row , column indices: ', row_index, col_index)
         self.resultPythonComparisonWithPCRResult[row_index][col_index] += 1
 
@@ -224,7 +245,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         print('[INFO] row , column indices: ', row_index, col_index)
         self.resultPythonComparisonWithHighContrastLineAnswer[row_index][col_index] += 1
 
-    def processFile(self, file):
+    def processFile(self, file, db):
         print('[INFO] processing filename ', file)
         df = pd.read_csv(file)
         print(df.head(5))
@@ -237,7 +258,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         total = 0
         barcodes = []
         # ================ DEBUG =========================
-        DEBUG_AMOUNT = 30
+        DEBUG_AMOUNT = int(db) if db else None
         DEBUG_counter = 1
 
         for index, row in df.iterrows():
@@ -252,6 +273,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                     print(RDT_RESULT, row[RDT_RESULT])
                     print(HIGH_CONTRAST_LINE_ANSWER,
                         row[HIGH_CONTRAST_LINE_ANSWER])
+                    print(TEST_STRIP_BOUNDARY, row[TEST_STRIP_BOUNDARY])
                     print(type(row[RDT_RESULT]))
                     # REPORT
                     validBarcodes += 1
@@ -264,11 +286,11 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                     if row[HIGH_CONTRAST_LINE_ANSWER] and isinstance(row[HIGH_CONTRAST_LINE_ANSWER], str) or not math.isnan(row[HIGH_CONTRAST_LINE_ANSWER]):
                         HighContrastLineMappings[row[HIGH_CONTRAST_LINE_ANSWER]] += 1
                     self.processBarcode(row[BARCODE], row[PCR_RESULT], row[RESULTS_USER_RESPONSE],
-                                        row[RDT_RESULT], row[HIGH_CONTRAST_LINE_ANSWER])
+                                        row[RDT_RESULT], row[HIGH_CONTRAST_LINE_ANSWER], row[TEST_STRIP_BOUNDARY])
 
                     # BREAK DEBUG
                     DEBUG_counter += 1
-                    if (DEBUG_counter > DEBUG_AMOUNT):
+                    if (db and DEBUG_counter > DEBUG_AMOUNT):
                         break
                 else:
                     total += 1
@@ -421,8 +443,8 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             totalInCurrentRow = 0
             for i, num in enumerate(row):
                 # TODO: not sure if this is correct. Ask CJ!
-                if (correctLabel == 0 and (i == 0)) or \
-                    ((correctLabel == 1 and (i != 0))):
+                if (correctLabel == 0 and (i == 4)) or \
+                    ((correctLabel == 1 and (i != 0 and i != 4))):
                     totalCorrect += num
                     totalCorrectInCurrentRow += num
                 lines += num
@@ -452,7 +474,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
               lines if lines != 0 else 'N/A'
         }
         result.append({'User Response': currResult})
-
+        self.printF1ScoreUserResponse(currResult)
         self.printResultTable(result)
 
     def reportAndroidResultStatistics(self):
@@ -621,6 +643,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         falsePositive = result['Negative']['result'] - result['Negative']['androidResult']
         falseNegative = result['Positive']['result'] - result['Positive']['androidResult']
         trueNegative = result['Negative']['androidResult']
+        print('[INFO] calculating f1 score', truePositive, falsePositive, falseNegative, trueNegative)
         precision = calculatePrecisionScore(truePositive, falsePositive)
         recall = calculateRecallScore(truePositive, falseNegative)
         f1Score = calculateF1Score(precision, recall)

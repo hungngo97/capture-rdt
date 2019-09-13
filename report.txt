@@ -15,3 +15,30 @@ noneOfTheAbove 0.0% (0/5)                   flu A 10.5263157895% (2/19)         
 overall 77.3195876289% (75/97)                   overall 71.6216216216% (53/74)           Negative 0.0% (0/84)                   
 oneLine 96.0526315789% (73/76)                   negative 98.0392156863% (50/51)                   
 threeLines 0.0% (0/5)               
+
+
+______
+9/12
+ANDROID
+High Contrast                               PCR                               User Response                               
+twoLines 57.1428571429% (4/7)                   flu B 100.0% (4/4)                   Positive 80.0% (8/10)                   
+noneOfTheAbove 50.0% (1/2)                   flu A 57.8947368421% (11/19)                   overall 17.5675675676% (13/74)                   
+overall 14.8648648649% (11/74)                   overall 37.8378378378% (28/74)                   Negative 7.8125% (5/64)                   
+oneLine 6.55737704918% (4/61)                   negative 25.4901960784% (13/51)                   
+threeLines 50.0% (2/4)    
+
+('F1 Score: ', 0.20779220779220778)
+('Precision: ', 0.11940298507462686)
+('Recall: ', 0.8)
+
+PYTHON
+High Contrast                               PCR                               User Response                               
+twoLines 16.6666666667% (2/12)                   flu B 0.0% (0/4)                   Positive 23.0769230769% (3/13)                   
+noneOfTheAbove 0.0% (0/5)                   flu A 10.5263157895% (2/19)                   overall 87.1287128713% (88/101)                   
+overall 77.2277227723% (78/101)                   overall 71.6216216216% (53/74)                   Negative 96.5909090909% (85/88)                   
+oneLine 96.2025316456% (76/79)                   negative 100.0% (51/51)                   
+threeLines 0.0% (0/5)                
+
+('F1 Score: ', 0.3157894736842105)
+('Precision: ', 0.5)
+('Recall: ', 0.23076923076923078)

@@ -27,6 +27,7 @@ from utils import (show_image, resize_image, Point, Rect, crop_rect, peakdet)
     *** test strip boundary column, it gives you the coordinates of the detected RDT. 
      so, you dont have to run SIFT. you can just use that to those points to crop the
       RDT and correct perspective. (NOT DONE)
+    *** Calculate F1 Score for  "Strip Line Answer (expert)"   
 """
 
 class ImageProcessor:

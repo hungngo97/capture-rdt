@@ -1,9 +1,9 @@
+from __future__ import division
 import cv2 as cv
 import numpy as np
 import os
 import sys
 from numpy import NaN, Inf, arange, isscalar, asarray, array
-
 
 FILES_TO_DELETE = [
     'cropResult.png',
