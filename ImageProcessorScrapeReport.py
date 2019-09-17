@@ -11,7 +11,7 @@ from utils import (
 )
 import math
 import json
-
+import sys
 """
     TODO: Figure the peak line detection + why python results is different from android
 """
@@ -111,6 +111,23 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         self.failDetectionCount = 0
         self.failDetectionDetailList = []
 
+    def preprocessTestStripBoundary(self, test_strip_boundary):
+        print('[INFO] teststripboundary', test_strip_boundary)
+        boundary = json.loads(test_strip_boundary)
+        print('[INFO] Test Strip Boundary JSON', test_strip_boundary)
+        print('[INFO] Test strip map conversion', boundary)
+        print(boundary[0]["x"])
+        arr = []
+        for point in boundary:
+            print(point)
+            x = point["x"]
+            y = point["y"]
+            arr.append([[x, y]])
+        print('[INFO] arr JSON', arr)
+        print('[INFO] JSON result', np.array(arr))
+        return np.array(arr).astype('float32')
+
+
     def processBarcode(self, barcode, pcr_result, results_user_response,
                        rdt_result, high_contrast_line_answer, test_strip_boundary):
         print('[INFO] start processBarcode..')
@@ -119,18 +136,17 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             return None
         # Convert number barcode to string
         barcode = str(int(barcode))
-
+        boundary = None
         # convert test_strip_boundary to dictionary
-        """
-            TODO: FINISH
-        
-        """
+        if test_strip_boundary and (isinstance(test_strip_boundary, str) or not math.isnan(test_strip_boundary)):
+            boundary = self.preprocessTestStripBoundary(test_strip_boundary)
+            print('[INFO] boundary preprocessing result', boundary)
         print('[INFO] processing barcode', barcode)
 
         URL_PATH = str(S3_URL_BASE_PATH) + \
             str(SECRET) + '/cough/' + str(barcode)
         print('[INFO] current URL path', URL_PATH)
-        interpretResult = self.interpretResultFromURL(URL_PATH, URL_PATH)
+        interpretResult = self.interpretResultFromURL(URL_PATH, URL_PATH, boundary)
         if interpretResult is None:
             # ===== TODO: Do something else if interpretResult is None
             self.failDetectionCount += 1
@@ -263,7 +279,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
 
         for index, row in df.iterrows():
             # row = df.iloc[DEBUG_counter]
-            try:
+            # try:
                 if row[BARCODE]:
                     # DEBUG
                     print('[INFO] row number: ', index)
@@ -292,40 +308,38 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                     DEBUG_counter += 1
                     if (db and DEBUG_counter > DEBUG_AMOUNT):
                         break
-                else:
-                    total += 1
-            except: 
-                continue
-            finally:
-                print('+++++++++++++++++++++++++++++++REPORT+++++++++++++++++++++++++++++++++++++')
-                print('----------------------------Overall Statistics----------------------------')
-                print('Total data rows: ', total)
-                print('Valid barcodes: ', validBarcodes)
-                print('High contrast Mappings', HighContrastLineMappings)
-                print('Interpretation Result Mappings', IntepretationResultMappings)
-                print('User Response Mappings', UserResponseMappings)
-                print('--------------------------Accuracy Table Comparison-----------------------')
-                print('=======Python Result========')
-                print('High Contrast Line Result Table')
-                self.printTable(HighContrastLineIndex.keys, self.colLabels, self.resultPythonComparisonWithHighContrastLineAnswer)
-                print('PCR Result Table')
-                self.printTable(PCRMappings.keys, self.colLabels, self.resultPythonComparisonWithPCRResult)
-                print('User Response Result Table')
-                self.printTable(UserResponseMappings.keys, self.colLabels, self.resultPythonComparisonWithUserResponse)
-                self.reportPythonResultStatistics()
-                print('=======Android Result=========')
-                print('High Contrast Line Result Table')
-                self.printTable(HighContrastLineIndex.keys, self.colLabels, self.resultAndroidComparisonWithHighContrastLineAnswer)
-                print('PCR Result Table')
-                self.printTable(PCRMappings.keys, self.colLabels, self.resultAndroidComparisonWithPCRResult)
-                print('User Response Result Table')
-                self.printTable(HighContrastLineIndex.keys, self.colLabels, self.resultAndroidComparisonWithUserResponse)
-                self.reportAndroidResultStatistics()
-                print('=======Line Count=======')
-                print('Line count table')
-                self.printTable(range(4), range(5), self.lineCountResult)
-                print('~~~~~~~')
-                self.reportLineCountStatistics()
+                total += 1
+            # except: 
+            #     continue
+        print('+++++++++++++++++++++++++++++++REPORT+++++++++++++++++++++++++++++++++++++')
+        print('----------------------------Overall Statistics----------------------------')
+        print('Total data rows: ', total)
+        print('Valid barcodes: ', validBarcodes)
+        print('High contrast Mappings', HighContrastLineMappings)
+        print('Interpretation Result Mappings', IntepretationResultMappings)
+        print('User Response Mappings', UserResponseMappings)
+        print('--------------------------Accuracy Table Comparison-----------------------')
+        print('=======Python Result========')
+        print('High Contrast Line Result Table')
+        self.printTable(HighContrastLineIndex.keys, self.colLabels, self.resultPythonComparisonWithHighContrastLineAnswer)
+        print('PCR Result Table')
+        self.printTable(PCRMappings.keys, self.colLabels, self.resultPythonComparisonWithPCRResult)
+        print('User Response Result Table')
+        self.printTable(UserResponseMappings.keys, self.colLabels, self.resultPythonComparisonWithUserResponse)
+        self.reportPythonResultStatistics()
+        print('=======Android Result=========')
+        print('High Contrast Line Result Table')
+        self.printTable(HighContrastLineIndex.keys, self.colLabels, self.resultAndroidComparisonWithHighContrastLineAnswer)
+        print('PCR Result Table')
+        self.printTable(PCRMappings.keys, self.colLabels, self.resultAndroidComparisonWithPCRResult)
+        print('User Response Result Table')
+        self.printTable(HighContrastLineIndex.keys, self.colLabels, self.resultAndroidComparisonWithUserResponse)
+        self.reportAndroidResultStatistics()
+        print('=======Line Count=======')
+        print('Line count table')
+        self.printTable(range(4), range(5), self.lineCountResult)
+        print('~~~~~~~')
+        self.reportLineCountStatistics()
 
     def reportPythonResultStatistics(self):
         # Column

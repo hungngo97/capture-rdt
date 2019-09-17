@@ -26,8 +26,12 @@ from utils import (show_image, resize_image, Point, Rect, crop_rect, peakdet)
     *** F1 score and specificity (NOT TESTED)
     *** test strip boundary column, it gives you the coordinates of the detected RDT. 
      so, you dont have to run SIFT. you can just use that to those points to crop the
-      RDT and correct perspective. (NOT DONE)
-    *** Calculate F1 Score for  "Strip Line Answer (expert)"   
+      RDT and correct perspective. (NOT DONE) --> Should we keep the old boundary from python and also
+      detect on that to compare with the boundary from android data? (ASK CJ)
+    *** Calculate F1 Score for  "Strip Line Answer (expert)" 
+    **** Generate ROC curve (first by using Excel, then using Python code)  
+
+
 """
 
 class ImageProcessor:
@@ -686,8 +690,7 @@ class ImageProcessor:
         # plt.show()
         return maxtab, len(maxtab)
 
-
-    def interpretResult(self, src):
+    def interpretResult(self, src, boundary=None):
         print('[INFO] interpretResult')
         self.src = src
         self.img = cv.imread(src, cv.IMREAD_GRAYSCALE)
@@ -703,20 +706,20 @@ class ImageProcessor:
         isSizeable = SizeResult.INVALID
         isCentered = False
         isUpright = False
-        boundary = None
+        # boundary = None
 
         # TODO: what is the purpose of cnt in here? Just to ensure that it loops many time?
-
-        while (not(isSizeable == SizeResult.RIGHT_SIZE and isCentered and isUpright) and cnt < 4):
-            cnt += 1
-            boundary = self.detectRDT(img, cnt)
-            if boundary is None:
-                return None
-            print('[SIFT boundary size]: ', boundary.shape)
-            isSizeable = self.checkSize(boundary, img.shape)
-            isCentered = self.checkIfCentered(boundary, img.shape, img)
-            isUpright = self.checkOrientation(boundary)
-            print("[INFO] SIFT-right size %s, center %s, orientation %s, (%.2f, %.2f), cnt %d", isSizeable, isCentered, isUpright, img.shape[0], img.shape[1], cnt)
+        if boundary is None:
+            while (not(isSizeable == SizeResult.RIGHT_SIZE and isCentered and isUpright) and cnt < 4):
+                cnt += 1
+                boundary = self.detectRDT(img, cnt)
+                if boundary is None:
+                    return None
+                print('[SIFT boundary size]: ', boundary.shape)
+                isSizeable = self.checkSize(boundary, img.shape)
+                isCentered = self.checkIfCentered(boundary, img.shape, img)
+                isUpright = self.checkOrientation(boundary)
+                print("[INFO] SIFT-right size %s, center %s, orientation %s, (%.2f, %.2f), cnt %d", isSizeable, isCentered, isUpright, img.shape[0], img.shape[1], cnt)
 
         if (boundary.shape[0] <= 0 and boundary.shape[1] <= 0):
             return InterpretationResult()

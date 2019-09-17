@@ -65,7 +65,7 @@ class ImageProcessorScrape(ImageProcessor):
         copyfile(imageFileName, dst + '/' + imageFileName)
         os.remove(imageFileName)
 
-    def interpretResultFromURL(self, baseURL, barcode):
+    def interpretResultFromURL(self, baseURL, barcode, boundary=None):
         print('[INFO] interpretResultFromURL')
         # Preprocessing
         for imageType in [RDT_SCAN, MANUAL_PHOTO]:
@@ -81,20 +81,22 @@ class ImageProcessorScrape(ImageProcessor):
             parts = imageName.split('_')
             barcode = parts[0]
             imageType = parts[1]
+            DIR_PATH = ROOT_DETECTION_DIR
 
             # Detection Checking
-            detectionResult = ImageProcessor.captureRDT(self, imageFileName)
-            DIR_PATH = ROOT_DETECTION_DIR
-            if detectionResult == None:
-                """ TODO: I think sizeResult of detection result is not correct as well"""
-            # if detectionResult == None or detectionResult.sizeResult == SizeResult.INVALID:
-                DIR_PATH += '/' + FALSE_SUBDIR + '/' + CANNOT_DETECT
-            else:
-                DIR_PATH += '/' + TRUE_SUBDIR
+            if boundary is None:
+                detectionResult = ImageProcessor.captureRDT(
+                    self, imageFileName)
+                if detectionResult == None:
+                    """ TODO: I think sizeResult of detection result is not correct as well"""
+                # if detectionResult == None or detectionResult.sizeResult == SizeResult.INVALID:
+                    DIR_PATH += '/' + FALSE_SUBDIR + '/' + CANNOT_DETECT
+                else:
+                    DIR_PATH += '/' + TRUE_SUBDIR
 
             # Interpret Result
             interpretResult = ImageProcessor.interpretResult(
-                self, imageFileName)
+                self, imageFileName, boundary)
             # if (interpretResult == None):
             #     DIR_PATH = ROOT_DETECTION_DIR + '/' + FALSE_SUBDIR + '/' + NO_CONTROL_AREA_FOUND
             # elif (interpretResult.testA and interpretResult.testB):
