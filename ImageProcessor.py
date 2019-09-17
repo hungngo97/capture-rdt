@@ -31,6 +31,8 @@ from utils import (show_image, resize_image, Point, Rect, crop_rect, peakdet)
     *** Calculate F1 Score for  "Strip Line Answer (expert)" 
     **** Generate ROC curve (first by using Excel, then using Python code)  
 
+    Ask CJ: Will there by any case that there is high contrast line but not user response?
+
 
 """
 

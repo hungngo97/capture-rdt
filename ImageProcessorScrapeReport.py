@@ -169,32 +169,39 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 interpretResult, high_contrast_line_answer)
         if high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer)):
             self.compareLineCount(interpretResult, high_contrast_line_answer)
-        if (high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer))) and (results_user_response and (isinstance(results_user_response, str) or not math.isnan(results_user_response))):
-            self.compareAndroidResult(
-                rdt_result, pcr_result, results_user_response, high_contrast_line_answer)
+        self.compareAndroidResult(
+            rdt_result, pcr_result, results_user_response, high_contrast_line_answer)
 
     def compareAndroidResult(self, rdt_result, pcr_result, results_user_response, high_contrast_line_answer):
         print('[INFO] start compareAndroidResult')
-        if not (high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer))) or \
-            not (pcr_result and (isinstance(pcr_result, str) or not math.isnan(pcr_result))) or \
-            not (results_user_response and (isinstance(results_user_response, str) or not math.isnan(results_user_response))):
-            return None
-    
-        contrastLineRowIndex = HighContrastLineIndex[high_contrast_line_answer]
-        pcrRowIndex = PCRMappingsIndex[pcr_result]
-        userResponseRowIndex = UserResponseIndex[results_user_response]
+        # if not (high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer))) or \
+        #     not (pcr_result and (isinstance(pcr_result, str) or not math.isnan(pcr_result))) or \
+        #     not (results_user_response and (isinstance(results_user_response, str) or not math.isnan(results_user_response))):
+        #     return None
         rdtResultColumnIndex = IntepretationResultMappingsIndex[rdt_result]
 
-        self.resultAndroidComparisonWithHighContrastLineAnswer[
-            contrastLineRowIndex][rdtResultColumnIndex] += 1
-        self.resultAndroidComparisonWithPCRResult[pcrRowIndex][rdtResultColumnIndex] += 1
-        self.resultAndroidComparisonWithUserResponse[userResponseRowIndex][rdtResultColumnIndex] += 1
+        if (high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer))):
+            contrastLineRowIndex = HighContrastLineIndex[high_contrast_line_answer]
+            self.resultAndroidComparisonWithHighContrastLineAnswer[
+                contrastLineRowIndex][rdtResultColumnIndex] += 1
+
+
+        if (pcr_result and (isinstance(pcr_result, str) or not math.isnan(pcr_result))):
+            pcrRowIndex = PCRMappingsIndex[pcr_result]
+            self.resultAndroidComparisonWithPCRResult[pcrRowIndex][rdtResultColumnIndex] += 1
+
+        if (results_user_response and (isinstance(results_user_response, str) or not math.isnan(results_user_response))):
+            userResponseRowIndex = UserResponseIndex[results_user_response]
+            self.resultAndroidComparisonWithUserResponse[userResponseRowIndex][rdtResultColumnIndex] += 1
 
     def compareLineCount(self, interpretResult, high_contrast_line_answer):
         print('[INFO] start compareLineCount')
+        print(interpretResult.lineCount)
         row_index = HighContrastLineIndex[high_contrast_line_answer]
         if interpretResult.lineCount:
             self.lineCountResult[row_index][interpretResult.lineCount] += 1
+        else:
+            self.lineCountResult[row_index][0] += 1
 
     def comparePCRResult(self, interpretResult, pcr_result):
         print('[INFO] start comparePCRResult')
