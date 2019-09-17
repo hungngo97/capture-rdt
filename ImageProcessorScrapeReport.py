@@ -13,7 +13,14 @@ import math
 import json
 import sys
 """
-    TODO: Figure the peak line detection + why python results is different from android
+    TODO: 
+     ** Debug why there is INVALID_RESULT label a lot (NOT DONE)
+     ** Refactor reportAndroidResultStatistics and reportPythonResultStatistics (NOT DONE)
+     ** Refactor androidResult where it should be pythonResult
+     ** TODO: Debug if expert response F1 Score make sense
+        Finish Google Sheet and Plot
+        Automate the process
+
 """
 
 SECRET_PATH = 'keys/cough_photos_key.txt'
@@ -24,6 +31,7 @@ RDT_RESULT = 'RDT Result: What the RDT Algorithm Interpreted'
 HIGH_CONTRAST_LINE_ANSWER = 'High Contrast Line Answer'
 TEST_STRIP_BOUNDARY = 'Test Strip Boundary'
 BARCODE = 'Barcode'
+EXPERT_RESPONSE = 'Strip Line Answer (expert)'
 SECRET = ''
 with open(SECRET_PATH, 'r') as file:
     SECRET = file.read()
@@ -34,6 +42,18 @@ IntepretationResultMappings = {
     'Flu B': 0,
     'Flu A': 0,
     'No control line': 0
+}
+
+ANDROID = 'ANDROID'
+PYTHON = 'PYTHON'
+
+ExpertResponseMappings = {
+    'noPink': 0,
+    'yesAboveBlue': 0,
+    'badPicture': 0,
+    'yesBelowBlue': 0,
+    'yesAboveAndBelowBlue': 0,
+    'noBlue': 0
 }
 
 HighContrastLineMappings = {
@@ -52,6 +72,15 @@ PCRMappings = {
     'negative': 0,
     'flu A': 0,
     'flu B': 0
+}
+
+ExpertResponseIndex = {
+    'noPink': 0,
+    'yesAboveBlue': 1,
+    'badPicture': 2,
+    'yesBelowBlue': 3,
+    'yesAboveAndBelowBlue': 4,
+    'noBlue': 5
 }
 
 HighContrastLineIndex = {
@@ -100,12 +129,16 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             [0, 0, 0, 0, 0] for _ in range(len(UserResponseMappings))]
         self.resultPythonComparisonWithPCRResult = [
             [0, 0, 0, 0, 0] for _ in range(len(PCRMappings))]
+        self.resultPythonComparisonWithExpertResponse = [
+            [0, 0, 0, 0, 0] for _ in range(len(ExpertResponseMappings))]
         self.resultAndroidComparisonWithHighContrastLineAnswer = [
             [0, 0, 0, 0, 0] for _ in range(len(HighContrastLineMappings))]
         self.resultAndroidComparisonWithUserResponse = [
             [0, 0, 0, 0, 0] for _ in range(len(UserResponseMappings))]
         self.resultAndroidComparisonWithPCRResult = [
             [0, 0, 0, 0, 0] for _ in range(len(PCRMappings))]
+        self.resultAndroidComparisonWithExpertResponse = [
+            [0, 0, 0, 0, 0] for _ in range(len(ExpertResponseMappings))]
         self.lineCountResult = [
             [0, 0, 0, 0, 0] for _ in range(4)]
         self.failDetectionCount = 0
@@ -116,7 +149,6 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         boundary = json.loads(test_strip_boundary)
         print('[INFO] Test Strip Boundary JSON', test_strip_boundary)
         print('[INFO] Test strip map conversion', boundary)
-        print(boundary[0]["x"])
         arr = []
         for point in boundary:
             print(point)
@@ -129,7 +161,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
 
 
     def processBarcode(self, barcode, pcr_result, results_user_response,
-                       rdt_result, high_contrast_line_answer, test_strip_boundary):
+                       rdt_result, high_contrast_line_answer, test_strip_boundary, expert_response):
         print('[INFO] start processBarcode..')
         print('[PREPROCESS] barcode', barcode)
         if barcode is None or not barcode or math.isnan(barcode):
@@ -156,6 +188,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 "pcrResult": pcr_result,
                 "resultsUserResponse": results_user_response,
                 "rdtResult": rdt_result,
+                "expertResponse": expert_response,
                 "HighcontrastLineAnswer": high_contrast_line_answer
             }
             self.failDetectionDetailList.append(failDetectionDetail)
@@ -169,15 +202,15 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 interpretResult, high_contrast_line_answer)
         if high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer)):
             self.compareLineCount(interpretResult, high_contrast_line_answer)
+        if expert_response and (isinstance(expert_response, str) or not math.isnan(expert_response)):
+            self.compareExpertResponse(interpretResult, expert_response)
         self.compareAndroidResult(
-            rdt_result, pcr_result, results_user_response, high_contrast_line_answer)
+            rdt_result, pcr_result, results_user_response, high_contrast_line_answer, expert_response)
 
-    def compareAndroidResult(self, rdt_result, pcr_result, results_user_response, high_contrast_line_answer):
+    def compareAndroidResult(self, rdt_result, pcr_result, results_user_response, high_contrast_line_answer, expert_response):
         print('[INFO] start compareAndroidResult')
-        # if not (high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer))) or \
-        #     not (pcr_result and (isinstance(pcr_result, str) or not math.isnan(pcr_result))) or \
-        #     not (results_user_response and (isinstance(results_user_response, str) or not math.isnan(results_user_response))):
-        #     return None
+        if not (high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer))):
+            return None
         rdtResultColumnIndex = IntepretationResultMappingsIndex[rdt_result]
 
         if (high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer))):
@@ -185,7 +218,10 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             self.resultAndroidComparisonWithHighContrastLineAnswer[
                 contrastLineRowIndex][rdtResultColumnIndex] += 1
 
-
+        if (expert_response and (isinstance(expert_response, str) or not math.isnan(expert_response))):
+            expertResponseRowIndex = ExpertResponseIndex[expert_response]
+            self.resultAndroidComparisonWithExpertResponse[expertResponseRowIndex][rdtResultColumnIndex] += 1
+    
         if (pcr_result and (isinstance(pcr_result, str) or not math.isnan(pcr_result))):
             pcrRowIndex = PCRMappingsIndex[pcr_result]
             self.resultAndroidComparisonWithPCRResult[pcrRowIndex][rdtResultColumnIndex] += 1
@@ -207,17 +243,6 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         print('[INFO] start comparePCRResult')
         row_index = PCRMappingsIndex[pcr_result]
         col_index = 0
-        # if (interpretResult == None):
-        #     col_index += 0
-        # elif (interpretResult.testA and interpretResult.testB):
-        #     col_index += 1
-        # elif (interpretResult.testA):
-        #     col_index += 2
-        # elif (interpretResult.testB):
-        #     col_index += 3
-        # else:
-        #     col_index += 4
-
         if (interpretResult == None):
             col_index += 0
         elif (interpretResult.control and interpretResult.testA and interpretResult.testB):
@@ -240,14 +265,16 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         col_index = 0
         if (interpretResult == None):
             col_index += 0
-        elif (interpretResult.testA and interpretResult.testB):
+        elif (interpretResult.control and interpretResult.testA and interpretResult.testB):
             col_index += 1
-        elif (interpretResult.testA):
+        elif (interpretResult.control and interpretResult.testA):
             col_index += 2
-        elif (interpretResult.testB):
+        elif (interpretResult.control and interpretResult.testB):
             col_index += 3
-        else:
+        elif (interpretResult.control):
             col_index += 4
+        else:  # Include invalid cases like only testA is true but controlLine is false etc.
+            col_index += 0
         print('[INFO] row , column indices: ', row_index, col_index)
         self.resultPythonComparisonWithUserResponse[row_index][col_index] += 1
 
@@ -257,16 +284,37 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         col_index = 0
         if (interpretResult == None):
             col_index += 0
-        elif (interpretResult.testA and interpretResult.testB):
+        elif (interpretResult.control and interpretResult.testA and interpretResult.testB):
             col_index += 1
-        elif (interpretResult.testA):
+        elif (interpretResult.control and interpretResult.testA):
             col_index += 2
-        elif (interpretResult.testB):
+        elif (interpretResult.control and interpretResult.testB):
             col_index += 3
-        else:
+        elif (interpretResult.control):
             col_index += 4
+        else:  # Include invalid cases like only testA is true but controlLine is false etc.
+            col_index += 0
         print('[INFO] row , column indices: ', row_index, col_index)
         self.resultPythonComparisonWithHighContrastLineAnswer[row_index][col_index] += 1
+
+    def compareExpertResponse(self, interpretResult, expert_response):
+        print('[INFO] start compareExpertResponse')
+        row_index = ExpertResponseIndex[expert_response]
+        col_index = 0
+        if (interpretResult == None):
+            col_index += 0
+        elif (interpretResult.control and interpretResult.testA and interpretResult.testB):
+            col_index += 1
+        elif (interpretResult.control and interpretResult.testA):
+            col_index += 2
+        elif (interpretResult.control and interpretResult.testB):
+            col_index += 3
+        elif (interpretResult.control):
+            col_index += 4
+        else:  # Include invalid cases like only testA is true but controlLine is false etc.
+            col_index += 0
+        print('[INFO] row , column indices: ', row_index, col_index)
+        self.resultPythonComparisonWithExpertResponse[row_index][col_index] += 1
 
     def processFile(self, file, db):
         print('[INFO] processing filename ', file)
@@ -297,6 +345,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                     print(HIGH_CONTRAST_LINE_ANSWER,
                         row[HIGH_CONTRAST_LINE_ANSWER])
                     print(TEST_STRIP_BOUNDARY, row[TEST_STRIP_BOUNDARY])
+                    print(EXPERT_RESPONSE, row[EXPERT_RESPONSE])
                     print(type(row[RDT_RESULT]))
                     # REPORT
                     validBarcodes += 1
@@ -308,8 +357,11 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                         UserResponseMappings[row[RESULTS_USER_RESPONSE]] += 1
                     if row[HIGH_CONTRAST_LINE_ANSWER] and isinstance(row[HIGH_CONTRAST_LINE_ANSWER], str) or not math.isnan(row[HIGH_CONTRAST_LINE_ANSWER]):
                         HighContrastLineMappings[row[HIGH_CONTRAST_LINE_ANSWER]] += 1
+                    if row[EXPERT_RESPONSE] and isinstance(row[EXPERT_RESPONSE], str) or not math.isnan(row[EXPERT_RESPONSE]):
+                        ExpertResponseMappings[row[EXPERT_RESPONSE]] += 1
+                    
                     self.processBarcode(row[BARCODE], row[PCR_RESULT], row[RESULTS_USER_RESPONSE],
-                                        row[RDT_RESULT], row[HIGH_CONTRAST_LINE_ANSWER], row[TEST_STRIP_BOUNDARY])
+                                        row[RDT_RESULT], row[HIGH_CONTRAST_LINE_ANSWER], row[TEST_STRIP_BOUNDARY],row[EXPERT_RESPONSE])
 
                     # BREAK DEBUG
                     DEBUG_counter += 1
@@ -325,6 +377,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         print('High contrast Mappings', HighContrastLineMappings)
         print('Interpretation Result Mappings', IntepretationResultMappings)
         print('User Response Mappings', UserResponseMappings)
+        print('Expert Response Mappings', ExpertResponseMappings)
         print('--------------------------Accuracy Table Comparison-----------------------')
         print('=======Python Result========')
         print('High Contrast Line Result Table')
@@ -333,6 +386,8 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         self.printTable(PCRMappings.keys, self.colLabels, self.resultPythonComparisonWithPCRResult)
         print('User Response Result Table')
         self.printTable(UserResponseMappings.keys, self.colLabels, self.resultPythonComparisonWithUserResponse)
+        print('Expert Response Mappings')
+        self.printTable(ExpertResponseMappings.keys, self.colLabels, self.resultPythonComparisonWithExpertResponse)
         self.reportPythonResultStatistics()
         print('=======Android Result=========')
         print('High Contrast Line Result Table')
@@ -341,12 +396,18 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         self.printTable(PCRMappings.keys, self.colLabels, self.resultAndroidComparisonWithPCRResult)
         print('User Response Result Table')
         self.printTable(HighContrastLineIndex.keys, self.colLabels, self.resultAndroidComparisonWithUserResponse)
+        print('Expert Response Mappings')
+        self.printTable(ExpertResponseIndex.keys, self.colLabels, self.resultAndroidComparisonWithExpertResponse)
         self.reportAndroidResultStatistics()
         print('=======Line Count=======')
         print('Line count table')
         self.printTable(range(4), range(5), self.lineCountResult)
         print('~~~~~~~')
         self.reportLineCountStatistics()
+        # print('============FAIL==========')
+        # print('Fail Detection Count', self.failDetectionCount)
+        # print('Fail detection list')
+        # print(json.dumps(self.failDetectionDetailList, sort_keys=True, indent=4))
 
     def reportPythonResultStatistics(self):
         # Column
@@ -483,7 +544,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
             }
 
-        print('Total number of PCR Result data: ', lines)
+        print('Total number of User Response data: ', lines)
         print('Number of correct prediction: ', totalCorrect)
         print('Percentage correct: ', totalCorrect /
               lines if lines != 0 else 'N/A')
@@ -497,6 +558,65 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         result.append({'User Response': currResult})
         self.printF1ScoreUserResponse(currResult)
         self.printResultTable(result)
+
+         # Expert Reponse
+        # Column
+        # No interpretation = 0
+        # Both = 1
+        # testA = 2
+        # testB = 3
+        # No flu = 4
+        # Row
+        #  'noPink': 0,
+        # 'yesAboveBlue': 1,
+        # 'badPicture': 2,
+        # 'yesBelowBlue': 3,
+        # 'yesAboveAndBelowBlue': 4,
+        # 'noBlue': 5
+        totalCorrect = 0
+        lines = 0
+        currResult = {}
+        for correctLabel, row in enumerate(self.resultPythonComparisonWithExpertResponse):
+            totalCorrectInCurrentRow = 0
+            totalInCurrentRow = 0
+            for i, num in enumerate(row):
+                if (correctLabel == 0 and (i == 4)) or \
+                        ((correctLabel == 1 and (i == 2))) or \
+                        (correctLabel == 3 and i == 3) or \
+                        (correctLabel == 4 and i == 1) or \
+                        (correctLabel == 5 and i == 0):
+                    totalCorrect += num
+                    totalCorrectInCurrentRow += num
+                lines += num
+                totalInCurrentRow += num
+            print('True Label (Expert Response Result):  ',
+                  {v: k for k, v in ExpertResponseIndex.items()}[correctLabel])
+            print('Number of correct prediction: ', totalCorrectInCurrentRow)
+            print('Total number of Labels: ', totalInCurrentRow)
+            print('Percentage Accuracy: ',
+                  totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
+            print('~~~~~~~~')
+            currResult[{v: k for k, v in ExpertResponseIndex.items()}[correctLabel]] = {
+                'androidResult' : totalCorrectInCurrentRow,
+                'result': totalInCurrentRow,
+                'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
+            }
+
+        print('Total number of Expert Response Result data: ', lines)
+        print('Number of correct prediction: ', totalCorrect)
+        print('Percentage correct: ', totalCorrect /
+              lines if lines != 0 else 'N/A')
+        print('~~~~~~~~~~~~')
+        currResult['overall'] = {
+            'androidResult': totalCorrect,
+            'result': lines,
+            'accuracy': totalCorrect /
+              lines if lines != 0 else 'N/A'
+        }
+        result.append({'Expert Response': currResult})
+        self.printF1ScoreExpertResponse(currResult, PYTHON)
+        self.printResultTable(result)
+
 
     def reportAndroidResultStatistics(self):
         # Column
@@ -651,8 +771,112 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         self.printF1ScoreUserResponse(currResult)
         self.printResultTable(result)
 
+        # Expert Reponse
+        # Column
+        # No interpretation = 0
+        # Both = 1
+        # testA = 2
+        # testB = 3
+        # No flu = 4
+        # Row
+        #  'noPink': 0,
+        # 'yesAboveBlue': 1,
+        # 'badPicture': 2,
+        # 'yesBelowBlue': 3,
+        # 'yesAboveAndBelowBlue': 4,
+        # 'noBlue': 5
+        totalCorrect = 0
+        lines = 0
+        currResult = {}
+        for correctLabel, row in enumerate(self.resultAndroidComparisonWithExpertResponse):
+            totalCorrectInCurrentRow = 0
+            totalInCurrentRow = 0
+            for i, num in enumerate(row):
+                if (correctLabel == 0 and (i == 4)) or \
+                        ((correctLabel == 1 and (i == 2))) or \
+                        (correctLabel == 3 and i == 3) or \
+                        (correctLabel == 4 and i == 1) or \
+                        (correctLabel == 5 and i == 0):
+                    totalCorrect += num
+                    totalCorrectInCurrentRow += num
+                lines += num
+                totalInCurrentRow += num
+            print('True Label (Expert Response Result):  ',
+                  {v: k for k, v in ExpertResponseIndex.items()}[correctLabel])
+            print('Number of correct prediction: ', totalCorrectInCurrentRow)
+            print('Total number of Labels: ', totalInCurrentRow)
+            print('Percentage Accuracy: ',
+                  totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
+            print('~~~~~~~~')
+            currResult[{v: k for k, v in ExpertResponseIndex.items()}[correctLabel]] = {
+                'androidResult' : totalCorrectInCurrentRow,
+                'result': totalInCurrentRow,
+                'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
+            }
+
+        print('Total number of Expert Response Result data: ', lines)
+        print('Number of correct prediction: ', totalCorrect)
+        print('Percentage correct: ', totalCorrect /
+              lines if lines != 0 else 'N/A')
+        print('~~~~~~~~~~~~')
+        currResult['overall'] = {
+            'androidResult': totalCorrect,
+            'result': lines,
+            'accuracy': totalCorrect /
+              lines if lines != 0 else 'N/A'
+        }
+        result.append({'Expert Response': currResult})
+        self.printF1ScoreExpertResponse(currResult, ANDROID)
+        self.printResultTable(result)
+
+    def printF1ScoreExpertResponse(self, result, result_platform):
+        print('~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        if result_platform == ANDROID:
+            result_table = self.resultAndroidComparisonWithExpertResponse
+        elif result_platform == PYTHON:
+            result_table = self.resultPythonComparisonWithExpertResponse
+        # Expert Reponse
+        # Column
+        # No interpretation = 0
+        # Both = 1
+        # testA = 2
+        # testB = 3
+        # No flu = 4
+        # Row
+        #  'noPink': 0,
+        # 'yesAboveBlue': 1,
+        # 'badPicture': 2,
+        # 'yesBelowBlue': 3,
+        # 'yesAboveAndBelowBlue': 4,
+        # 'noBlue': 5
+        falseNegative, falsePositive, trueNegative, truePositive = 0, 0, 0, 0
+        for correctLabel, row in enumerate(self.resultAndroidComparisonWithExpertResponse):
+            totalCorrectInCurrentRow = 0
+            totalInCurrentRow = 0
+            for i, num in enumerate(row):
+                if correctLabel == 0: #No Pink: Negative
+                    if i == 0: 
+                        trueNegative += num
+                    else:
+                        falseNegative += num
+                elif correctLabel == 1 or correctLabel == 3 or correctLabel == 4: # Positive cases
+                    if i == correctLabel:
+                        truePositive += num
+                    else:
+                        falsePositive += num
+                # Ignore noBlue and bad Picture
+        print('[INFO] calculating f1 score', truePositive, falsePositive, falseNegative, trueNegative)
+        precision = calculatePrecisionScore(truePositive, falsePositive)
+        recall = calculateRecallScore(truePositive, falseNegative)
+        f1Score = calculateF1Score(precision, recall)        
+        # Output
+        print('F1 Score: ', f1Score)
+        print('Precision: ', precision)
+        print('Recall: ', recall)
+
     def printF1ScoreUserResponse(self, result):
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        print('User Reponse')
         f1Score, precision, recall = self.calculateF1ScoreUserResponse(result)
         print('F1 Score: ', f1Score)
         print('Precision: ', precision)
@@ -710,24 +934,8 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         print('Percentage correct: ', totalCorrect /
               lines if lines != 0 else 'N/A')
         print('~~~~~~~~~~~~')
-        # print('Fail Detection Count', self.failDetectionCount)
-        # print('Fail detection list')
-        # print(json.dumps(self.failDetectionDetailList, sort_keys=True, indent=4))
 
     def printTable(self, rowLabels, colLabels, table):
-        # if (len(table) > 1):
-        #     s = "      "
-        #     for colLabel in colLabels:
-        #         print(colLabel),
-        #         print('| ')
-
-        # for i, row in enumerate(table):
-        #     print(rowLabels[i]), 
-        #     print('| ')
-        #     for j, col in enumerate(row):
-        #         print(col), 
-        #         print(' ')
-
         for i, row in enumerate(table):
             print(row)
 

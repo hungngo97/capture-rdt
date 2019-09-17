@@ -42,3 +42,191 @@ threeLines 0.0% (0/5)
 ('F1 Score: ', 0.3157894736842105)
 ('Precision: ', 0.5)
 ('Recall: ', 0.23076923076923078)
+
+---------
+9/16
++++++++++++++++++++++++++++
+Peak Detection Constant: 30.0
+
+Expert Response Mappings
+[9, 61, 7, 8, 11]
+[1, 0, 0, 8, 0]
+[0, 0, 0, 0, 0]
+[0, 0, 0, 0, 0]
+[0, 0, 0, 0, 0]
+[0, 0, 0, 0, 0]
+
+PYTHON
+High Contrast                               PCR                               User Response                               Expert Response                               
+twoLines 16.6666666667% (2/12)                   flu B 0.0% (0/4)                   Positive 21.4285714286% (3/14)                   yesAboveAndBelowBlue % (0/0)                   
+noneOfTheAbove 20.0% (1/5)                   flu A 9.52380952381% (2/21)                   overall 53.7735849057% (57/106)                   overall 57.1428571429% (60/105)                   
+overall 47.1698113208% (50/106)                   overall 73.8636363636% (65/88)                   Negative 58.6956521739% (54/92)                   yesAboveBlue 22.2222222222% (2/9)
+oneLine 55.9523809524% (47/84)                   negative 100.0% (63/63)                                                                             noPink 60.4166666667% (58/96)  
+threeLines 0.0% (0/5)                                                      
+
+Expert Reponse F1 Score
+('[INFO] calculating f1 score', 0, 9, 87, 9)
+('F1 Score: ', 'N/A')
+('Precision: ', 0.0)
+('Recall: ', 0.0)
+
+User Response F1 Score
+('[INFO] calculating f1 score', 3, 38, 11, 54)
+('F1 Score: ', 0.1090909090909091)
+('Precision: ', 0.07317073170731707)
+('Recall: ', 0.21428571428571427)
+
+==================
+ANDROID
+High Contrast                               PCR                               User Response                               Expert Response                               
+twoLines 58.3333333333% (7/12)                   flu B 100.0% (4/4)                   Positive 85.7142857143% (12/14)                   yesAboveAndBelowBlue N/A (0/0)
+noneOfTheAbove 20.0% (1/5)                   flu A 52.380952381% (11/21)                   overall 19.8113207547% (21/106)                   overall 10.4761904762% (11/105)                   
+overall 14.1509433962% (15/106)                   overall 35.2272727273% (31/88)                   Negative 9.78260869565% (9/92)                   yesBelowBlue N/A% (0/0)                   
+oneLine 4.7619047619% (4/84)                   negative 25.3968253968% (16/63)                                                                      badPicture N/A% (0/0)                   
+threeLines 60.0% (3/5)                   yesAboveBlue 0.0% (0/9)                                                                                     noBlue N/A% (0/0)
+                                                                                                                                                     noPink 11.4583333333% (11/96) 
+
+Expert Response F1 Score
+('[INFO] calculating f1 score', 0, 9, 87, 9)
+('F1 Score: ', 'N/A')
+('Precision: ', 0.0)
+('Recall: ', 0.0)
+
+User Response F1 Score
+('[INFO] calculating f1 score', 12, 83, 2, 9)
+('F1 Score: ', 0.2201834862385321)
+('Precision: ', 0.12631578947368421)
+('Recall: ', 0.8571428571428571)
+
+++++++++++++++++++++++++++++++++++
+Peak Detection Constant: 35.0
+
+Expert Response Mappings
+[48, 0, 0, 0, 48]
+[6, 0, 1, 1, 1]
+[0, 0, 0, 0, 0]
+[0, 0, 0, 0, 0]
+[0, 0, 0, 0, 0]
+[0, 0, 0, 0, 0]
+
+PYTHON
+High Contrast                               PCR                               User Response                               Expert Response                               
+twoLines 8.33333333333% (1/12)                   flu B 0.0% (0/4)                   Positive 14.2857142857% (2/14)                   yesAboveAndBelowBlue N/A
+noneOfTheAbove 40.0% (2/5)                   flu A 4.7619047619% (1/21)                   overall 43.3962264151% (46/106)                   overall 46.6666666667% (49/105)                   
+overall 40.5660377358% (43/106)                   overall 72.7272727273% (64/88)                   Negative 47.8260869565% (44/92)                   yesBelowBlue N/A
+oneLine 47.619047619% (40/84)                   negative 100.0% (63/63)                                                                             badPicture N/A
+threeLines 0.0% (0/5)                                                                                                                               yesAboveBlue 11.1111111111% (1/9)                   
+                                                                                                                                                        noPink 50.0% (48/96)                   
+                                                                                                                                                        noBlue N/A
+Expert Reponse F1 Score
+('[INFO] calculating f1 score', 0, 9, 87, 9)
+('F1 Score: ', 'N/A')
+('Precision: ', 0.0)
+('Recall: ', 0.0)
+
+User Response F1 Score
+('[INFO] calculating f1 score', 2, 48, 12, 44)
+('F1 Score: ', 0.0625)
+('Precision: ', 0.04)
+('Recall: ', 0.14285714285714285)
+
+==================
+ANDROID
+Expert Response Mappings
+[9, 61, 7, 8, 11]
+[1, 0, 0, 8, 0]
+[0, 0, 0, 0, 0]
+[0, 0, 0, 0, 0]
+[0, 0, 0, 0, 0]
+[0, 0, 0, 0, 0]
+High Contrast                               PCR                               User Response                               Expert Response                               
+twoLines 58.3333333333% (7/12)                   flu B 100.0% (4/4)                   Positive 85.7142857143% (12/14)                   yesAboveAndBelowBlue N/A
+noneOfTheAbove 20.0% (1/5)                   flu A 52.380952381% (11/21)                   overall 19.8113207547% (21/106)                   overall 10.4761904762% (11/105)                   
+overall 14.1509433962% (15/106)                   overall 35.2272727273% (31/88)                   Negative 9.78260869565% (9/92)                   yesBelowBlue N/A
+oneLine 4.7619047619% (4/84)                   negative 25.3968253968% (16/63)                                                                      badPicture N/A
+threeLines 60.0% (3/5)                                                                                                                                  yesAboveBlue 0.0% (0/9)                   
+                                                                                                                                                        noPink 11.4583333333% (11/96)                   
+                                                                                                                                                            noBlue N/A% (0/0)                                                                                     
+
+Expert Response F1 Score
+('[INFO] calculating f1 score', 0, 9, 87, 9)
+('F1 Score: ', 'N/A')
+('Precision: ', 0.0)
+('Recall: ', 0.0)
+
+User Response F1 Score
+('[INFO] calculating f1 score', 12, 83, 2, 9)
+('F1 Score: ', 0.2201834862385321)
+('Precision: ', 0.12631578947368421)
+('Recall: ', 0.8571428571428571)
+++++++++++++++++++++++++++++++++++
+Peak Detection Constant: 25.0
+
+Expert Response Mappings
+[36, 0, 0, 0, 60]
+[5, 0, 3, 1, 0]
+[0, 0, 0, 0, 0]
+[0, 0, 0, 0, 0]
+[0, 0, 0, 0, 0]
+[0, 0, 0, 0, 0]
+
+PYTHON
+High Contrast                               PCR                               User Response                               Expert Response                               
+twoLines 25.0% (3/12)                   flu B 0.0% (0/4)                   Positive 28.5714285714% (4/14)                   yesAboveAndBelowBlue N/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/A% (0/0)                   
+noneOfTheAbove 20.0% (1/5)                   flu A 14.2857142857% (3/21)                   overall 56.6037735849% (60/106)                   overall 60.0% (63/105)                   
+overall 50.0% (53/106)                   overall 75.0% (66/88)                   Negative 60.8695652174% (56/92)                   yesBelowBlue N/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/A% (0/0)                   
+oneLine 58.3333333333% (49/84)                   negative 100.0% (63/63)                   badPicture N/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/A% (0/0)                   
+threeLines 0.0% (0/5)                   yesAboveBlue 33.3333333333% (3/9)                   
+noPink 62.5% (60/96)                   
+noBlue N/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/A% (0/0)                                                                                                                              yesAboveBlue 11.1111111111% (1/9)                   
+                                                                                                                                                        noPink 50.0% (48/96)                   
+                                                                                                                                                        noBlue N/A
+Expert Reponse F1 Score
+('[INFO] calculating f1 score', 0, 9, 87, 9)
+('F1 Score: ', 'N/A')
+('Precision: ', 0.0)
+('Recall: ', 0.0)
+
+User Response F1 Score
+('[INFO] calculating f1 score', 4, 36, 10, 56)
+('F1 Score: ', 0.14814814814814817)
+('Precision: ', 0.1)
+('Recall: ', 0.2857142857142857)
+
+==================
+ANDROID
+Expert Response Mappings
+[9, 61, 7, 8, 11]
+[1, 0, 0, 8, 0]
+[0, 0, 0, 0, 0]
+[0, 0, 0, 0, 0]
+[0, 0, 0, 0, 0]
+[0, 0, 0, 0, 0]
+High Contrast                               PCR                               User Response                               Expert Response                               
+twoLines 58.3333333333% (7/12)                   flu B 100.0% (4/4)                   Positive 85.7142857143% (12/14)                   yesAboveAndBelowBlue N/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/A% (0/0)                   
+noneOfTheAbove 20.0% (1/5)                   flu A 52.380952381% (11/21)                   overall 19.8113207547% (21/106)                   overall 10.4761904762% (11/105)                   
+overall 14.1509433962% (15/106)                   overall 35.2272727273% (31/88)                   Negative 9.78260869565% (9/92)                   yesBelowBlue N/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/A% (0/0)                   
+oneLine 4.7619047619% (4/84)                   negative 25.3968253968% (16/63)                   badPicture N/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/A% (0/0)                   
+threeLines 60.0% (3/5)                   yesAboveBlue 0.0% (0/9)                   
+noPink 11.4583333333% (11/96)                   
+noBlue N/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/AN/A% (0/0)                                                                                                                                 yesAboveBlue 0.0% (0/9)                   
+                                                                                                                                                        noPink 11.4583333333% (11/96)                   
+                                                                                                                                                            noBlue N/A% (0/0)                                                                                     
+
+Expert Response F1 Score
+('[INFO] calculating f1 score', 0, 9, 87, 9)
+('F1 Score: ', 'N/A')
+('Precision: ', 0.0)
+('Recall: ', 0.0)
+
+User Response F1 Score
+('[INFO] calculating f1 score', 12, 83, 2, 9)
+('F1 Score: ', 0.2201834862385321)
+('Precision: ', 0.12631578947368421)
+('Recall: ', 0.8571428571428571)
+
+
+
+TODO: Debug if expert response F1 Score make sense
+        Finish Google Sheet and Plot
+        Automate the process

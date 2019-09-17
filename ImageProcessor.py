@@ -15,7 +15,7 @@ from constants import (OVER_EXP_THRESHOLD, UNDER_EXP_THRESHOLD, OVER_EXP_WHITE_C
                        FIDUCIAL_POSITION_MAX, FIDUCIAL_POSITION_MIN, FIDUCIAL_TO_CONTROL_LINE_OFFSET,
                        RESULT_WINDOW_RECT_HEIGHT, RESULT_WINDOW_RECT_WIDTH_PADDING, FIDUCIAL_COUNT,
                        FIDUCIAL_DISTANCE, ANGLE_THRESHOLD, LINE_SEARCH_WIDTH, CONTROL_LINE_POSITION, 
-                       TEST_A_LINE_POSITION, TEST_B_LINE_POSITION, INTENSITY_THRESHOLD, 
+                       TEST_A_LINE_POSITION, TEST_B_LINE_POSITION, INTENSITY_THRESHOLD, PEAK_DIST_THRESHOLD,
                        CONTROL_INTENSITY_PEAK_THRESHOLD, TEST_INTENSITY_PEAK_THRESHOLD, DETECTION_RANGE)
 from result import (ExposureResult, CaptureResult, InterpretationResult, SizeResult)
 from utils import (show_image, resize_image, Point, Rect, crop_rect, peakdet)
@@ -26,7 +26,7 @@ from utils import (show_image, resize_image, Point, Rect, crop_rect, peakdet)
     *** F1 score and specificity (NOT TESTED)
     *** test strip boundary column, it gives you the coordinates of the detected RDT. 
      so, you dont have to run SIFT. you can just use that to those points to crop the
-      RDT and correct perspective. (NOT DONE) --> Should we keep the old boundary from python and also
+      RDT and correct perspective. (DONE) --> Should we keep the old boundary from python and also
       detect on that to compare with the boundary from android data? (ASK CJ)
     *** Calculate F1 Score for  "Strip Line Answer (expert)" 
     **** Generate ROC curve (first by using Excel, then using Python code)  
@@ -680,7 +680,7 @@ class ImageProcessor:
         colLightness = [255] - colLightness
         print('[INFO] lightness shape', colLightness.shape)
         # Find peak and peak should correspond to lines
-        maxtab, mintab = peakdet(colLightness, 30.0)
+        maxtab, mintab = peakdet(colLightness, PEAK_DIST_THRESHOLD)
         print('Max', maxtab)
         print('Min', mintab)
         print('Total strip count', len(maxtab))
