@@ -1,4 +1,9 @@
 import numpy as np
+import json
+
+variables = {}
+with open('variables/variables.json') as json_file:
+    variables = json.load(json_file)
 # Brightness
 OVER_EXP_THRESHOLD = 255
 UNDER_EXP_THRESHOLD = 120
@@ -59,4 +64,4 @@ FIDUCIAL_COUNT = 2
 # ('[INFO] Loading contour...', (1606, 10, 373, 102), 1979)
 # (FIDUCIAL_POSITION_MIN < rectPos and rectPos < FIDUCIAL_POSITION_MAX and FIDUCIAL_MIN_HEIGHT < h and FIDUCIAL_MIN_WIDTH < w and w < FIDUCIAL_MAX_WIDTH):
 
-PEAK_DIST_THRESHOLD = 75.0
+PEAK_DIST_THRESHOLD = 40.0

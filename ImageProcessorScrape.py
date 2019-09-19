@@ -141,6 +141,8 @@ class ImageProcessorScrape(ImageProcessor):
                 clear_files()
             copyfile(imageFileName, DIR_PATH + '/' + imageFileName)
             self.storeEnhancedScan(baseURL, DIR_PATH)
+            with open(DIR_PATH + '/interpretResult.log', 'w') as f:
+                f.write(str(interpretResult))
 
             # Clear things up
             os.remove(imageFileName)

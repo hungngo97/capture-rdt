@@ -30,7 +30,10 @@ from utils import (show_image, resize_image, Point, Rect, crop_rect, peakdet)
       detect on that to compare with the boundary from android data? (ASK CJ)
     *** Calculate F1 Score for  "Strip Line Answer (expert)" 
     **** Generate ROC curve (first by using Excel, then using Python code)  
-
+    **** Refactor GUI code to toggle debug for later usage
+    *** Scale down the image instead of scaling up the refimage
+    **** Figure is the invalid cases due to scaling thing or peak detection is failing or cropping
+    # fail
     Ask CJ: Will there by any case that there is high contrast line but not user response?
 
 
@@ -833,8 +836,12 @@ class ImageProcessor:
         # testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
         # show_image(result)
         cv.imwrite('result.png', result)
+<<<<<<< HEAD
         maxtab, linesResult = self.detectLinesWithPeak(result)
         print('INTERPRETATION', maxtab)
+=======
+        maxtab, numberOfLines = self.detectLinesWithPeak(result)
+>>>>>>> Added logs and fixed some conditions for counting F1 values
         for col, val, width in maxtab:
             if col > TEST_A_LINE_POSITION - DETECTION_RANGE and col < TEST_A_LINE_POSITION + DETECTION_RANGE:
                 testA = True
@@ -843,11 +850,16 @@ class ImageProcessor:
             if col > CONTROL_LINE_POSITION - DETECTION_RANGE and col < CONTROL_LINE_POSITION + DETECTION_RANGE:
                 control = True
         with open('interpretResult.txt', 'w') as file:
-            file.write(str(InterpretationResult(result, control, testA, testB, linesResult))) 
-        print('[INFO] detection result: ', str(InterpretationResult(result, control, testA, testB, linesResult)))
+            file.write(str(InterpretationResult(result, control, testA, testB, numberOfLines))) 
+        print('[INFO] detection result: ', str(InterpretationResult(result, control, testA, testB, numberOfLines)))
         print('[INFO] lines result', control, testA, testB)
+<<<<<<< HEAD
         return InterpretationResult(result, control, testA, testB, linesResult)
 
+=======
+        return InterpretationResult(result, control, testA, testB, numberOfLines)
+        
+>>>>>>> Added logs and fixed some conditions for counting F1 values
         # try:
         #     (x1, y1), (x2, y2) = self.getViewfinderRect(img)
         #     print('[INFO] top left br' , x1, y1, x2, y2)
@@ -873,7 +885,7 @@ class ImageProcessor:
         #     print('[INFO] lines result', control, testA, testB)
         #     # show_image(result)
         #     cv.imwrite('result.png', result)
-        #     maxtab, linesResult = self.detectLinesWithPeak(result)
+        #     maxtab, numberOfLines = self.detectLinesWithPeak(result)
         #     for col, val, width in maxtab:
         #         if col > TEST_A_LINE_POSITION - 10 and col < TEST_A_LINE_POSITION + 10:
         #             testA = True
@@ -882,9 +894,9 @@ class ImageProcessor:
         #         if col > CONTROL_LINE_POSITION - 10 and col < CONTROL_LINE_POSITION + 10:
         #             control = True
         #     with open('interpretResult.txt', 'w') as file:
-        #         file.write(str(InterpretationResult(result, control, testA, testB, linesResult))) 
-        #     print('[INFO] detection result: ', str(InterpretationResult(result, control, testA, testB, linesResult)))
-        #     return InterpretationResult(result, control, testA, testB, linesResult)
+        #         file.write(str(InterpretationResult(result, control, testA, testB, numberOfLines))) 
+        #     print('[INFO] detection result: ', str(InterpretationResult(result, control, testA, testB, numberOfLines)))
+        #     return InterpretationResult(result, control, testA, testB, numberOfLines)
         # except Exception as e: 
         #     # Not detected found
         #     print("Something went wrong")

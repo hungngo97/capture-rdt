@@ -124,23 +124,23 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             No flu = 4
         """
         self.resultPythonComparisonWithHighContrastLineAnswer = [
-            [0, 0, 0, 0, 0] for _ in range(len(HighContrastLineMappings))]
+            [0, 0, 0, 0, 0, 0] for _ in range(len(HighContrastLineMappings))]
         self.resultPythonComparisonWithUserResponse = [
-            [0, 0, 0, 0, 0] for _ in range(len(UserResponseMappings))]
+            [0, 0, 0, 0, 0, 0] for _ in range(len(UserResponseMappings))]
         self.resultPythonComparisonWithPCRResult = [
-            [0, 0, 0, 0, 0] for _ in range(len(PCRMappings))]
+            [0, 0, 0, 0, 0, 0] for _ in range(len(PCRMappings))]
         self.resultPythonComparisonWithExpertResponse = [
-            [0, 0, 0, 0, 0] for _ in range(len(ExpertResponseMappings))]
+            [0, 0, 0, 0, 0, 0] for _ in range(len(ExpertResponseMappings))]
         self.resultAndroidComparisonWithHighContrastLineAnswer = [
-            [0, 0, 0, 0, 0] for _ in range(len(HighContrastLineMappings))]
+            [0, 0, 0, 0, 0, 0] for _ in range(len(HighContrastLineMappings))]
         self.resultAndroidComparisonWithUserResponse = [
-            [0, 0, 0, 0, 0] for _ in range(len(UserResponseMappings))]
+            [0, 0, 0, 0, 0, 0] for _ in range(len(UserResponseMappings))]
         self.resultAndroidComparisonWithPCRResult = [
-            [0, 0, 0, 0, 0] for _ in range(len(PCRMappings))]
+            [0, 0, 0, 0, 0, 0] for _ in range(len(PCRMappings))]
         self.resultAndroidComparisonWithExpertResponse = [
-            [0, 0, 0, 0, 0] for _ in range(len(ExpertResponseMappings))]
+            [0, 0, 0, 0, 0, 0] for _ in range(len(ExpertResponseMappings))]
         self.lineCountResult = [
-            [0, 0, 0, 0, 0] for _ in range(4)]
+            [0, 0, 0, 0, 0, 0] for _ in range(4)]
         self.failDetectionCount = 0
         self.failDetectionDetailList = []
 
@@ -254,7 +254,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         elif (interpretResult.control):
             col_index += 4
         else:  # Include invalid cases like only testA is true but controlLine is false etc.
-            col_index += 0
+            col_index += 5
 
         print('[INFO] row , column indices: ', row_index, col_index)
         self.resultPythonComparisonWithPCRResult[row_index][col_index] += 1
@@ -274,7 +274,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         elif (interpretResult.control):
             col_index += 4
         else:  # Include invalid cases like only testA is true but controlLine is false etc.
-            col_index += 0
+            col_index += 5
         print('[INFO] row , column indices: ', row_index, col_index)
         self.resultPythonComparisonWithUserResponse[row_index][col_index] += 1
 
@@ -293,7 +293,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         elif (interpretResult.control):
             col_index += 4
         else:  # Include invalid cases like only testA is true but controlLine is false etc.
-            col_index += 0
+            col_index += 5
         print('[INFO] row , column indices: ', row_index, col_index)
         self.resultPythonComparisonWithHighContrastLineAnswer[row_index][col_index] += 1
 
@@ -312,7 +312,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         elif (interpretResult.control):
             col_index += 4
         else:  # Include invalid cases like only testA is true but controlLine is false etc.
-            col_index += 0
+            col_index += 5
         print('[INFO] row , column indices: ', row_index, col_index)
         self.resultPythonComparisonWithExpertResponse[row_index][col_index] += 1
 
@@ -620,12 +620,11 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
 
     def reportAndroidResultStatistics(self):
         # Column
-        #         No interpretation = 0
-        # Both = 1
-        # testA = 2
-        # testB = 3
-        # No flu = 4
-        # High Contrast Line
+    # 'Both': 0,
+    # 'Negative': 1,
+    # 'Flu B': 2,
+    # 'Flu A': 3,
+    # 'No control line': 4
         # ROw
         #  'oneLine': 1,
         # 'noneOfTheAbove': 0,
@@ -640,10 +639,10 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             totalInCurrentRow = 0
             for i, num in enumerate(row):
                 # TODO: not sure if this is correct. Ask CJ!
-                if (correctContrastLineNumber == 0 and i == 0) or \
+                if (correctContrastLineNumber == 0 and i == 1) or \
                     ((correctContrastLineNumber == 1 and i == 4)) or \
                     (correctContrastLineNumber == 2 and (i == 2 or i == 3)) or \
-                        (correctContrastLineNumber == 3 and i == 1):
+                        (correctContrastLineNumber == 3 and i == 0):
                     totalCorrect += num
                     totalCorrectInCurrentRow += num
                 lines += num
@@ -676,11 +675,11 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         }
         result.append({'High Contrast': currResult})
                 # Column
-        #         No interpretation = 0
-        # Both = 1
-        # testA = 2
-        # testB = 3
-        # No flu = 4
+    # 'Both': 0,
+    # 'Negative': 1,
+    # 'Flu B': 2,
+    # 'Flu A': 3,
+    # 'No control line': 4
         # PCR Result
             #   'negative': 0,
             # 'flu A': 1,
@@ -693,9 +692,9 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             totalInCurrentRow = 0
             for i, num in enumerate(row):
                 # TODO: not sure if this is correct. Ask CJ!
-                if (correctLabel == 0 and (i == 4 or i == 0)) or \
-                    ((correctLabel == 1 and (i == 2 or i == 1))) or \
-                    (correctLabel == 2 and (i == 1 or i == 3)):
+                if (correctLabel == 0 and (i == 1)) or \
+                    ((correctLabel == 1 and (i == 3))) or \
+                    (correctLabel == 2 and (i == 2)):
                     totalCorrect += num
                     totalCorrectInCurrentRow += num
                 lines += num
@@ -726,6 +725,13 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         }
         result.append({'PCR': currResult})
         # User Reponse
+    # 'Both': 0,
+    # 'Negative': 1,
+    # 'Flu B': 2,
+    # 'Flu A': 3,
+    # 'No control line': 4
+
+
         # 'Negative': 0,
         # 'Positive': 1
         totalCorrect = 0
@@ -737,8 +743,8 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             totalInCurrentRow = 0
             for i, num in enumerate(row):
                 # TODO: not sure if this is correct. Ask CJ!
-                if (correctLabel == 0 and (i == 4)) or \
-                    ((correctLabel == 1 and (i != 4))):
+                if (correctLabel == 0 and (i == 1)) or \
+                    ((correctLabel == 1 and (i != 1))):
                     totalCorrect += num
                     totalCorrectInCurrentRow += num
                 lines += num
@@ -773,11 +779,11 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
 
         # Expert Reponse
         # Column
-        # No interpretation = 0
-        # Both = 1
-        # testA = 2
-        # testB = 3
-        # No flu = 4
+    # 'Both': 0,
+    # 'Negative': 1,
+    # 'Flu B': 2,
+    # 'Flu A': 3,
+    # 'No control line': 4
         # Row
         #  'noPink': 0,
         # 'yesAboveBlue': 1,
@@ -792,11 +798,11 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             totalCorrectInCurrentRow = 0
             totalInCurrentRow = 0
             for i, num in enumerate(row):
-                if (correctLabel == 0 and (i == 4)) or \
-                        ((correctLabel == 1 and (i == 2))) or \
-                        (correctLabel == 3 and i == 3) or \
-                        (correctLabel == 4 and i == 1) or \
-                        (correctLabel == 5 and i == 0):
+                if (correctLabel == 0 and (i == 1)) or \
+                        ((correctLabel == 1 and (i == 3))) or \
+                        (correctLabel == 3 and i == 2) or \
+                        (correctLabel == 4 and i == 0) or \
+                        (correctLabel == 5 and i == 4):
                     totalCorrect += num
                     totalCorrectInCurrentRow += num
                 lines += num
@@ -855,11 +861,13 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             totalInCurrentRow = 0
             for i, num in enumerate(row):
                 if correctLabel == 0: #No Pink: Negative
-                    if i == 0: 
+                    if i == 4: 
                         trueNegative += num
                     else:
                         falseNegative += num
-                elif correctLabel == 1 or correctLabel == 3 or correctLabel == 4: # Positive cases
+                elif (correctLabel == 1 and i == 2) or \
+                    (correctLabel == 1 and i == 3) or \
+                    (correctLabel == 1 and i == 1): # Positive cases
                     if i == correctLabel:
                         truePositive += num
                     else:
