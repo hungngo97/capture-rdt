@@ -863,14 +863,14 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 if correctLabel == 0: #No Pink: Negative
                     if i == 4: 
                         trueNegative += num
-                    else:
+                    elif i != 5:
                         falseNegative += num
                 elif (correctLabel == 1 and i == 2) or \
                     (correctLabel == 1 and i == 3) or \
                     (correctLabel == 1 and i == 1): # Positive cases
                     if i == correctLabel:
                         truePositive += num
-                    else:
+                    elif i != 5:
                         falsePositive += num
                 # Ignore noBlue and bad Picture
         print('[INFO] calculating f1 score', truePositive, falsePositive, falseNegative, trueNegative)

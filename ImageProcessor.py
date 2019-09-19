@@ -836,12 +836,7 @@ class ImageProcessor:
         # testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
         # show_image(result)
         cv.imwrite('result.png', result)
-<<<<<<< HEAD
-        maxtab, linesResult = self.detectLinesWithPeak(result)
-        print('INTERPRETATION', maxtab)
-=======
         maxtab, numberOfLines = self.detectLinesWithPeak(result)
->>>>>>> Added logs and fixed some conditions for counting F1 values
         for col, val, width in maxtab:
             if col > TEST_A_LINE_POSITION - DETECTION_RANGE and col < TEST_A_LINE_POSITION + DETECTION_RANGE:
                 testA = True
@@ -853,13 +848,8 @@ class ImageProcessor:
             file.write(str(InterpretationResult(result, control, testA, testB, numberOfLines))) 
         print('[INFO] detection result: ', str(InterpretationResult(result, control, testA, testB, numberOfLines)))
         print('[INFO] lines result', control, testA, testB)
-<<<<<<< HEAD
-        return InterpretationResult(result, control, testA, testB, linesResult)
-
-=======
         return InterpretationResult(result, control, testA, testB, numberOfLines)
         
->>>>>>> Added logs and fixed some conditions for counting F1 values
         # try:
         #     (x1, y1), (x2, y2) = self.getViewfinderRect(img)
         #     print('[INFO] top left br' , x1, y1, x2, y2)
