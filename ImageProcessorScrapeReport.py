@@ -837,6 +837,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
 
     def printF1ScoreExpertResponse(self, result, result_platform):
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        result_platform = None
         if result_platform == ANDROID:
             result_table = self.resultAndroidComparisonWithExpertResponse
         elif result_platform == PYTHON:
@@ -856,7 +857,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         # 'yesAboveAndBelowBlue': 4,
         # 'noBlue': 5
         falseNegative, falsePositive, trueNegative, truePositive = 0, 0, 0, 0
-        for correctLabel, row in enumerate(self.resultAndroidComparisonWithExpertResponse):
+        for correctLabel, row in enumerate(result_platform):
             totalCorrectInCurrentRow = 0
             totalInCurrentRow = 0
             for i, num in enumerate(row):
