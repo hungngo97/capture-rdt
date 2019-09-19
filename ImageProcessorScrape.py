@@ -93,6 +93,8 @@ class ImageProcessorScrape(ImageProcessor):
                     DIR_PATH += '/' + FALSE_SUBDIR + '/' + CANNOT_DETECT
                 else:
                     DIR_PATH += '/' + TRUE_SUBDIR
+            else:
+                DIR_PATH += '/' + TRUE_SUBDIR
 
             # Interpret Result
             interpretResult = ImageProcessor.interpretResult(

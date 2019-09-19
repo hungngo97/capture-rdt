@@ -7,7 +7,7 @@ import enum
 import time
 from constants import (OVER_EXP_THRESHOLD, UNDER_EXP_THRESHOLD, OVER_EXP_WHITE_COUNT,
                        VIEW_FINDER_SCALE_H, VIEW_FINDER_SCALE_W, SHARPNESS_THRESHOLD,
-                       CROP_RATIO, MIN_MATCH_COUNT, POSITION_THRESHOLD, ANGLE_THRESHOLD,
+                       CROP_RATIO, MIN_MATCH_COUNT, SIZE_THRESHOLD, POSITION_THRESHOLD, ANGLE_THRESHOLD,
                        CONTROL_LINE_POSITION,
                        CONTROL_LINE_COLOR_UPPER, CONTROL_LINE_COLOR_LOWER, CONTROL_LINE_POSITION_MIN,
                        CONTROL_LINE_POSITION_MAX, CONTROL_LINE_MIN_HEIGHT, CONTROL_LINE_MIN_WIDTH,
@@ -42,7 +42,7 @@ class ImageProcessor:
         self.matcher = cv.BFMatcher(cv.NORM_L1, crossCheck=False)
         # Load reference image for Quickvue flu test strip
         self.fluRefImg = resize_image(
-            'resources/quickvue_ref_v4_1.jpg', gray=True, scale_percent=400)
+            'resources/quickvue_ref_v5.jpg', gray=True, scale_percent=100)
         # show_image(self.fluRefImg)
         # print(self.fluRefImg)
         # Load reference image for SD Bioline Malaria RDT
@@ -123,7 +123,8 @@ class ImageProcessor:
         sharpness = self.calculateSharpness(resized)
         isSharp = sharpness > (float('-inf') * (1 - SHARPNESS_THRESHOLD))
         print('[INFO] isSharp: ', isSharp)
-        return isSharp
+        return True
+        #return isSharp
 
     def calculateSharpness(self, img):
         print('[INFO] start calculateSharpness')
@@ -140,22 +141,22 @@ class ImageProcessor:
     def detectRDT(self, img, cnt=5):
         print('[INFO] start detectRDT')
         startTime = time.time()
-        width, height = img.shape
-        # p1 = (0, int(height * (1 - VIEW_FINDER_SCALE_W / CROP_RATIO) / 2))
-        # p2 = (int(width - p1[0]), int(height - p1[1]))
-        """ 
-            ==================
-            TODO: this mask is still HARDCODEDDDDDD!!!!!!
-            =================
-        """
-        p1 = (int(width * (1 - VIEW_FINDER_SCALE_W)/2 * CROP_RATIO) , 0)
-        p2 = (int(width - p1[0]), int(height - p1[1] - 65))
-        roi = img[p1[0]:p2[0], p1[1]:p2[1]]
+        height, width = img.shape
+        p1 = (0, int(height * (1 - (VIEW_FINDER_SCALE_W) / CROP_RATIO) / 2))
+        p2 = (int(width - p1[0]), int(height - p1[1]))
+        #""" 
+        #    ==================
+        #    TODO: this mask is still HARDCODEDDDDDD!!!!!!
+        #    =================
+        #"""
+        #p1 = (int(width * (1 - VIEW_FINDER_SCALE_W)/2 * CROP_RATIO) , 0)
+        #p2 = (int(width - p1[0]), int(height - p1[1] - 65))
+        roi = img[p1[1]:p2[1], p1[0]:p2[0]]
         # img = roi
-        mask = np.zeros((width, height), np.uint8)
-        mask[p1[0]:p2[0], p1[1]: p2[1]] = 255
+        mask = np.zeros((height, width), np.uint8)
+        mask[p1[1]:p2[1], p1[0]: p2[0]] = 255
         # show_image(img)
-        # show_image(roi)
+        # show_image(mask)
         # keypoints, descriptors = self.siftDetector.detectAndCompute(img, None)
         # show_image(mask)
         keypoints, descriptors = self.siftDetector.detectAndCompute(img, mask)
@@ -204,15 +205,45 @@ class ImageProcessor:
             # print('[INFO] mask', mask)
             matchesMask = mask.ravel().tolist()
             h,w = self.fluRefImg.shape
-            pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
+            pts = np.float32([ [0,0],[w-1,0],[w-1,h-1],[0,h-1] ]).reshape(-1,1,2)
             if M is None or M.size == 0:
                 return None
             dst = cv.perspectiveTransform(pts,M)
             print('[INFO] dst transformation pts', dst)
-            img2 = cv.polylines(img,[np.int32(dst)],True,(255,0,0))
+            img2 = np.copy(img)
+            img2 = cv.polylines(img2,[np.int32(dst)],True,(255,0,0))
+            pts_box = cv.minAreaRect(dst)
+            box = cv.boxPoints(pts_box) # cv2.boxPoints(rect) for OpenCV 3.x
+            box = np.int0(box)
+            cv.drawContours(img2,[box],0,(0,0,255),2)
             print('[INFO] finish perspective transform')
+            print(box)
             # show_image(roi)
             # show_image(img2)
+            # img2=None
+            new_dst = np.copy(dst)
+            #for i in list(range(0, 4)):
+            #    min_dist = 99999999
+            #    min_j = -1
+            #    for j in list(range(0, 4)):
+            #        print(box[i], dst[j])
+            #        dist = pow(box[i][0]-dst[j][0][0], 2) + pow(box[i][1]-dst[j][0][1], 2)
+
+            #        if dist < min_dist:
+            #            print('---min', dist, j, box[i], new_dst[j])
+            #            min_dist = dist
+            #            min_j = j
+            #    new_dst[min_j][0][0] = box[i][0]
+            #    new_dst[min_j][0][1] = box[i][1]
+            for i in list(range(0, 4)):
+                if pts_box[2] < -45:
+                    new_dst[(i+2) % 4] = [box[i]]
+                else:
+                    new_dst[(i+3) % 4] = [box[i]]
+
+            dst = np.copy(new_dst)
+            print(dst)
+
         else:
             print( "Not enough matches are found - {}/{}".format(len(good), MIN_MATCH_COUNT) )
             matchesMask = None
@@ -222,11 +253,13 @@ class ImageProcessor:
                    singlePointColor = None,
                    matchesMask = matchesMask, # draw only inliers
                    flags = 2)
-        # img3 = cv.drawMatches(self.fluRefImg,self.refSiftKeyPoints,img2,keypoints,good,None,**draw_params)
-        # plt.imshow(img3, 'gray'),plt.show()
+        img3 = cv.drawMatches(self.fluRefImg,self.refSiftKeyPoints,img2,keypoints,good,None,**draw_params)
+        #plt.imshow(img3, 'gray'),plt.show()
+        # show_image(img3)
 
         h, w  = self.fluRefImg.shape
-        refBoundary = np.float32([ [0,0], [0,h-1],[w-1,h-1],[w-1,0]]).reshape(-1,1,2)
+        #refBoundary = np.float32([ [0,0], [0,h-1],[w-1,h-1],[w-1,0]]).reshape(-1,1,2)
+        refBoundary = np.float32([ [0,0],[w-1,0],[w-1,h-1],[0,h-1] ]).reshape(-1,1,2)
         print('Refboundary', refBoundary)
         print('Boundary', dst)
         M = cv.getPerspectiveTransform(dst, refBoundary)
@@ -256,9 +289,12 @@ class ImageProcessor:
         print('[INFO] checkIfCentered')
         center = self.measureCenter(boundary, img)
         print('[INFO] rotated rect center', center)
-        w, h  = imgShape
+        h,w  = imgShape
         trueCenter = (w/2 , h/2)
         isCentered = center[0] < trueCenter[0] + (w * POSITION_THRESHOLD) and center[0] > trueCenter[0]-(w *POSITION_THRESHOLD) and center[1] < trueCenter[1]+(h *POSITION_THRESHOLD) and center[1] > trueCenter[1]-(h*POSITION_THRESHOLD)
+        print('[INFO] isCentered:', imgShape)
+        print('[INFO] isCentered:', trueCenter[0] + (w * POSITION_THRESHOLD), trueCenter[0]-(w *POSITION_THRESHOLD))
+        print('[INFO] isCentered:', trueCenter[1] + (h * POSITION_THRESHOLD), trueCenter[1]-(h *POSITION_THRESHOLD))
         print('[INFO] isCentered:', isCentered)
         # TODO: draw image to show how to get isCentered
         return isCentered
@@ -278,18 +314,20 @@ class ImageProcessor:
 
     def checkSize(self, boundary, imgShape):
         print('[INFO] checkSize')
-        width, height = imgShape
+        height,width = imgShape
         largestDimension = self.measureSize(boundary)
         print('[INFO] height', height)
+        print('[INFO] largest dimension', largestDimension)
         # TODO: not sure if we even need the view finder scale??
-        isRightSize = largestDimension < width * VIEW_FINDER_SCALE_H + 100 and largestDimension > width * VIEW_FINDER_SCALE_H - 100
+        isRightSize = largestDimension < width * (VIEW_FINDER_SCALE_H + SIZE_THRESHOLD) and largestDimension > width * (VIEW_FINDER_SCALE_H - SIZE_THRESHOLD)
+        print('[INFO] range:', width * (VIEW_FINDER_SCALE_H + SIZE_THRESHOLD), width * (VIEW_FINDER_SCALE_H - SIZE_THRESHOLD))
         
         sizeResult = SizeResult.INVALID
         if isRightSize:
             sizeResult = SizeResult.RIGHT_SIZE
-        elif largestDimension > height * VIEW_FINDER_SCALE_H + 100:
+        elif largestDimension > height * (VIEW_FINDER_SCALE_H + SIZE_THRESHOLD):
                 sizeResult = SizeResult.LARGE
-        elif largestDimension < height * VIEW_FINDER_SCALE_H - 100:
+        elif largestDimension < height * (VIEW_FINDER_SCALE_H - SIZE_THRESHOLD):
             sizeResult = SizeResult.SMALL
         else:
             sizeResult = SizeResult.INVALID
@@ -387,7 +425,8 @@ class ImageProcessor:
         h, w = self.fluRefImg.shape
         # img2 = cv.polylines(img,[np.int32(boundary)],True,(255,0,0))
         # show_image(img2)
-        refBoundary = np.float32([ [0,0], [0,h-1],[w-1,h-1],[w-1,0]]).reshape(-1,1,2)
+        #refBoundary = np.float32([ [0,0], [0,h-1],[w-1,h-1],[w-1,0]]).reshape(-1,1,2)
+        refBoundary = np.float32([ [0,0],[w-1,0],[w-1,h-1],[0,h-1] ]).reshape(-1,1,2)
         print('Refboundary', refBoundary)
         print('Boundary', boundary)
         M = cv.getPerspectiveTransform(boundary, refBoundary)
@@ -460,8 +499,8 @@ class ImageProcessor:
         kernelErode = np.ones((5,5),np.uint8)
         kernelDilate = np.ones((20,20), np.uint8)
 
-        threshold = cv.erode(threshold, kernelErode,iterations = 1)
-        threshold = cv.dilate(threshold,kernelDilate,iterations = 1)
+        threshold = cv.erode(threshold, kernelErode)
+        threshold = cv.dilate(threshold,kernelDilate)
         threshold = cv.GaussianBlur(threshold,(5,5),2, 2)
         # show_image(threshold)
         im2, contours, hierarchy = cv.findContours(threshold ,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
@@ -472,7 +511,7 @@ class ImageProcessor:
         fiducial = 0
 
         # show_image(img)
-        # cv.drawContours(img, contours, -1, (0,255,0), 3)
+        cv.drawContours(img, contours, -1, (0,255,0), 3)
         # show_image(img)
 
         for contour in contours:
@@ -480,16 +519,28 @@ class ImageProcessor:
             x,y,w,h = rect
             rectPos = x + w
             print('[INFO] Loading contour...', rect, rectPos)
-            if (FIDUCIAL_POSITION_MIN < rectPos and rectPos < FIDUCIAL_POSITION_MAX and FIDUCIAL_MIN_HEIGHT < h and FIDUCIAL_MIN_WIDTH < w and w < FIDUCIAL_MAX_WIDTH): 
-                fiducialRects.append(Rect(x,y,w,h))
-                print('[INFO] Found fiducial rect, ', x, y, w, h)
-                if x > 1500:
-                    #It should be the arrow
-                    arrows += 1
-                if x > 250 and x < 600:
-                    fiducial += 1 #should be the black rectangle
-                # cv.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
-                # show_image(img)
+            if (rectPos < 700):
+                if (FIDUCIAL_POSITION_MIN < rectPos and rectPos < FIDUCIAL_POSITION_MAX and FIDUCIAL_MIN_HEIGHT < h and FIDUCIAL_MIN_WIDTH < w and w < FIDUCIAL_MAX_WIDTH):
+                    fiducialRects.append(Rect(x,y,w,h))
+                    print('[INFO] Found fiducial rect, ', x, y, w, h)
+                    if x > 600:
+                        #It should be the arrow
+                        arrows += 1
+                    if x > 250 and x < 600:
+                        fiducial += 1 #should be the black rectangle
+                    # cv.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
+                    # show_image(img)
+            else:
+                if (FIDUCIAL_POSITION_MIN < rectPos and rectPos < FIDUCIAL_POSITION_MAX and 20 < h and FIDUCIAL_MIN_WIDTH < w and w < FIDUCIAL_MAX_WIDTH):
+                    fiducialRects.append(Rect(x,y,w,h))
+                    print('[INFO] Found fiducial rect, ', x, y, w, h)
+                    if x > 600:
+                        #It should be the arrow
+                        arrows += 1
+                    if x > 250 and x < 600:
+                        fiducial += 1 #should be the black rectangle
+                    # cv.rectangle(img,(x,y),(x+w,y+h),(0,255,0),2)
+                    # show_image(img)
         # There are some edge cases like the arrows on the right get recognized as 2 or 3 small arrows,
         # Therefore it can lead to fiducialRect > 2, but what we can do is sort them and take the average
         # between the 2 components (like the upper fiducial mean x and lower fiducial mean x)
@@ -505,11 +556,13 @@ class ImageProcessor:
             if (len(fiducialRects) > 2):
                 center1 = fiducialRects[-1].x + fiducialRects[-1].w
 
-            midpoint = int((center0 + center1) / 2)
-            diff = abs(center0 - center1)
+            midpoint = float(int((center0 + center1) / 2))
+            diff = float(abs(center0 - center1))
             scale = 1 if FIDUCIAL_DISTANCE == 0 else diff / FIDUCIAL_DISTANCE
             offset = scale * FIDUCIAL_TO_CONTROL_LINE_OFFSET
 
+            print('img shape', img.shape)
+            print('offset', offset)
             print('CEnter0', center0)
             print('center1', center1)
             print('midpoint', midpoint)
@@ -517,7 +570,7 @@ class ImageProcessor:
             tl = Point(midpoint + offset - RESULT_WINDOW_RECT_HEIGHT * scale / 2.0,
                         RESULT_WINDOW_RECT_WIDTH_PADDING)
             br = Point(midpoint + offset + RESULT_WINDOW_RECT_HEIGHT * scale / 2.0,
-                        img.shape[1] - RESULT_WINDOW_RECT_WIDTH_PADDING)
+                        img.shape[0] - RESULT_WINDOW_RECT_WIDTH_PADDING)
             img = cv.rectangle(img,(int(tl.x), int(tl.y)),(int(br.x), int(br.y)),(0,255,0),3)
             print('[INFO] tl, br', tl.x, br.x)
             # show_image(img)
@@ -536,7 +589,8 @@ class ImageProcessor:
         h, w = self.fluRefImg.shape
         # img2 = cv.polylines(img,[np.int32(boundary)],True,(255,0,0))
         # show_image(img2)
-        refBoundary = np.float32([ [0,0], [0,h-1],[w-1,h-1],[w-1,0]]).reshape(-1,1,2)
+        #refBoundary = np.float32([ [0,0], [0,h-1],[w-1,h-1],[w-1,0]]).reshape(-1,1,2)
+        refBoundary = np.float32([ [0,0],[w-1,0],[w-1,h-1],[0,h-1] ]).reshape(-1,1,2)
         print('Refboundary', refBoundary)
         print('Boundary', boundary)
         M = cv.getPerspectiveTransform(boundary, refBoundary)
@@ -603,10 +657,10 @@ class ImageProcessor:
         return self.enhanceImage(controlLineRect, tile)
 
     def enhanceImage(self, img, tile):
-        print('[INFO] enhanceImage')
+        print('[INFO] enhanceImage', img.shape)
         # show_image(img)
-        result = cv.cvtColor(img, cv.COLOR_RGBA2RGB)
-        result = cv.cvtColor(result, cv.COLOR_RGB2HLS)
+        #result = cv.cvtColor(img, cv.COLOR_RGBA2RGB)
+        result = cv.cvtColor(img, cv.COLOR_RGB2HLS)
          # create a CLAHE object (Arguments are optional).
         clahe = cv.createCLAHE(clipLimit=10.0, tileGridSize=tile)
         channels = cv.split(result)
@@ -614,10 +668,10 @@ class ImageProcessor:
         cl1 = clahe.apply(channels[1])
         channels[1] = cl1
         result = cv.merge(channels)
-        result = cv.cvtColor(img, cv.COLOR_HLS2RGB)
-        # result = cv.cvtColor(img, cv.RGB2RGBA)
+        result = cv.cvtColor(result, cv.COLOR_HLS2RGB)
+        #result = cv.cvtColor(result, cv.RGB2RGBA)
         # show_image(result)
-        return result 
+        return result
 
     def readLine(self, img, position, isControlLine):
         print('[INFO] readLine started')
@@ -696,7 +750,7 @@ class ImageProcessor:
         print('[INFO] interpretResult')
         self.src = src
         self.img = cv.imread(src, cv.IMREAD_GRAYSCALE)
-        width, height = self.img.shape
+        height, width = self.img.shape
         self.height = height
         self.width = width
         # colorImg = cv.imread(src, cv.IMREAD_COLOR)
@@ -712,16 +766,37 @@ class ImageProcessor:
 
         # TODO: what is the purpose of cnt in here? Just to ensure that it loops many time?
         if boundary is None:
-            while (not(isSizeable == SizeResult.RIGHT_SIZE and isCentered and isUpright) and cnt < 4):
+            #while cnt < 8:
+            min_dist = 99999999
+            min_boundary = boundary
+            for i in list(range(3,8)):
                 cnt += 1
                 boundary = self.detectRDT(img, cnt)
                 if boundary is None:
-                    return None
+                    #return None
+                    continue
                 print('[SIFT boundary size]: ', boundary.shape)
                 isSizeable = self.checkSize(boundary, img.shape)
                 isCentered = self.checkIfCentered(boundary, img.shape, img)
                 isUpright = self.checkOrientation(boundary)
+
                 print("[INFO] SIFT-right size %s, center %s, orientation %s, (%.2f, %.2f), cnt %d", isSizeable, isCentered, isUpright, img.shape[0], img.shape[1], cnt)
+
+                if isSizeable == SizeResult.RIGHT_SIZE and isCentered and isUpright:
+                    print("match!!!!")
+                    size = self.measureSize(boundary)
+                    center = self.measureCenter(boundary, img)
+                    dist_center = pow(center[0]-img.shape[1]/2.0, 2)+pow(center[1]-img.shape[0]/2.0, 2)
+                    print("Dist - size", size - img.shape[0] * VIEW_FINDER_SCALE_H)
+                    print("Dist - center", pow(center[0]-img.shape[1]/2.0, 2)+pow(center[1]-img.shape[0]/2.0, 2))
+                    if dist_center < min_dist:
+                        min_dist = dist_center
+                        min_boundary = boundary
+
+            boundary = min_boundary
+
+        if boundary is None:
+            return None
 
         if (boundary.shape[0] <= 0 and boundary.shape[1] <= 0):
             return InterpretationResult()
@@ -735,6 +810,8 @@ class ImageProcessor:
         # cropped = cv.rectangle(img,(y1, x1),(y2, x2),(0,255,0),5)
         # show_image(cropped)
         # show_image(roi)
+        # img2 = cv.polylines(colorImg,[np.int32(boundary)],True,(255,0,0))
+        # show_image(img2)
         result = self.cropResultWindow(colorImg, boundary)
         if result is None:
             return None
@@ -745,6 +822,7 @@ class ImageProcessor:
 
         if (result.shape[0] == 0 and result.shape[1] == 0):
             return InterpretationResult(result, False, False, False)
+        print('INFO - result.shape', result.shape)
         result = self.enhanceResultWindow(result, (5, result.shape[1]))
         # result = self.correctGamma(result, 0.75)
         # TODO: do we need to do correct Gamma?
@@ -756,6 +834,7 @@ class ImageProcessor:
         # show_image(result)
         cv.imwrite('result.png', result)
         maxtab, linesResult = self.detectLinesWithPeak(result)
+        print('INTERPRETATION', maxtab)
         for col, val, width in maxtab:
             if col > TEST_A_LINE_POSITION - DETECTION_RANGE and col < TEST_A_LINE_POSITION + DETECTION_RANGE:
                 testA = True
@@ -768,7 +847,7 @@ class ImageProcessor:
         print('[INFO] detection result: ', str(InterpretationResult(result, control, testA, testB, linesResult)))
         print('[INFO] lines result', control, testA, testB)
         return InterpretationResult(result, control, testA, testB, linesResult)
-        
+
         # try:
         #     (x1, y1), (x2, y2) = self.getViewfinderRect(img)
         #     print('[INFO] top left br' , x1, y1, x2, y2)
