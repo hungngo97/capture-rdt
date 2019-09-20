@@ -309,9 +309,76 @@ User Response F1 Score
 ('Precision: ', 0.125)
 ('Recall: ', 0.2857142857142857)
 
+______________
+constant 150
+High Contrast                               PCR                               User Response                               Expert Response                               
+twoLines 36.3636363636% (4/11)                   flu B 0.0% (0/4)                   Positive 43.75% (7/16)                   yesAboveAndBelowBlue N/A% (0/0)                   
+noneOfTheAbove 0.0% (0/5)                   flu A 20.0% (4/20)                   overall 86.5384615385% (90/104)                   overall 88.3495145631% (91/103)                   
+overall 77.8846153846% (81/104)                   overall 71.7948717949% (56/78)                   Negative 94.3181818182% (83/88)                   yesBelowBlue N/A% (0/0)                   
+oneLine 93.9024390244% (77/82)                   negative 96.2962962963% (52/54)                                                    badPicture N/A% (0/0)                   
+threeLines 0.0% (0/6)                                                                                                              yesAboveBlue 45.4545454545% (5/11)                   
+                                                                                                                                    noPink 93.4782608696% (86/92)                   
+                                                                                                                                    noBlue N/A% (0/0)                                                                                                                                             noPink 93.4782608696% (86/92)                   
+                      
+truePositive, falsePositive, falseNegative, trueNegative)                                                                                                                          noBlue N/A% (0/0)  
+('[INFO] calculating f1 score', 5, 2, 5, 86)
+('F1 Score: ', 0.588235294117647)
+('Precision: ', 0.7142857142857143)
+('Recall: ', 0.5)  
+
+constant 130
+High Contrast                               PCR                               User Response                               Expert Response                               
+twoLines 54.5454545455% (6/11)                   flu B 0.0% (0/4)                   Positive 56.25% (9/16)                   yesAboveAndBelowBlue N/A% (0/0)                   
+noneOfTheAbove 0.0% (0/5)                   flu A 30.0% (6/20)                   overall 88.4615384615% (92/104)                   overall 90.2912621359% (93/103)                   
+overall 80.7692307692% (84/104)                   overall 74.358974359% (58/78)                   Negative 94.3181818182% (83/88)                   yesBelowBlue N/A% (0/0)                   
+oneLine 93.9024390244% (77/82)                   negative 96.2962962963% (52/54)                   badPicture N/A% (0/0)                   
+threeLines 16.6666666667% (1/6)                   yesAboveBlue 63.6363636364% (7/11)                   
+noPink 93.4782608696% (86/92)                   
+noBlue N/A% (0/0)     
+
+High Contrast                               PCR                               User Response                               Expert Response                               
+twoLines 54.5454545455% (12/22)                   flu B 0.0% (0/8)                   Positive 54.8387096774% (17/31)                   yesAboveAndBelowBlue N/A% (0/0)                   
+noneOfTheAbove 0.0% (0/9)                   flu A 28.2051282051% (11/39)                   overall 88.3495145631% (182/206)                   overall 90.6862745098% (185/204)                   
+overall 81.067961165% (167/206)                   overall 74.025974026% (114/154)                   Negative 94.2857142857% (165/175)                   yesBelowBlue N/A% (0/0)                   
+oneLine 93.9024390244% (154/164)                   negative 96.261682243% (103/107)                   badPicture N/A% (0/0)                   
+threeLines 9.09090909091% (1/11)                   yesAboveBlue 66.6666666667% (14/21)                   
+noPink 93.4426229508% (171/183)                   
+noBlue N/A% (0/0)          
+
+('[INFO] calculating f1 score', 7, 2, 3, 86)
+('F1 Score: ', 0.7368421052631577)
+('Precision: ', 0.7777777777777778)
+('Recall: ', 0.7)
 
 
-TODO: Debug if expert response F1 Score make sense
-        Finish Google Sheet and Plot
-        Automate the process
-        vscode 15, left 40, right 10
+constant 110
+High Contrast                               PCR                               User Response                               Expert Response                               
+twoLines 72.7272727273% (8/11)                   flu B 0.0% (0/4)                   Positive 68.75% (11/16)                   yesAboveAndBelowBlue N/A% (0/0)                   
+noneOfTheAbove 0.0% (0/5)                   flu A 40.0% (8/20)                   overall 90.3846153846% (94/104)                   overall 92.2330097087% (95/103)                   
+overall 82.6923076923% (86/104)                   overall 76.9230769231% (60/78)                   Negative 94.3181818182% (83/88)                   yesBelowBlue N/A% (0/0)                   
+oneLine 93.9024390244% (77/82)                   negative 96.2962962963% (52/54)                   badPicture N/A% (0/0)                   
+threeLines 16.6666666667% (1/6)                   yesAboveBlue 81.8181818182% (9/11)                   
+noPink 93.4782608696% (86/92)                   
+noBlue N/A% (0/0)    
+
+('[INFO] calculating f1 score', 9, 2, 1, 86)
+('F1 Score: ', 0.8571428571428572)
+('Precision: ', 0.8181818181818182)
+('Recall: ', 0.9)
+('False Positive rate: ', 0.022727272727272728)
+('True Positive rate: ', 0.9)
+
+constant 170
+High Contrast                               PCR                               User Response                               Expert Response                               
+twoLines 18.1818181818% (2/11)                   flu B 0.0% (0/4)                   Positive 31.25% (5/16)                   yesAboveAndBelowBlue N/A% (0/0)                   
+noneOfTheAbove 0.0% (0/5)                   flu A 10.0% (2/20)                   overall 85.5769230769% (89/104)                   overall 87.3786407767% (90/103)                   
+overall 76.9230769231% (80/104)                   overall 69.2307692308% (54/78)                   Negative 95.4545454545% (84/88)                   yesBelowBlue N/A% (0/0)                   
+oneLine 95.1219512195% (78/82)                   negative 96.2962962963% (52/54)                   badPicture N/A% (0/0)                   
+threeLines 0.0% (0/6)                   yesAboveBlue 27.2727272727% (3/11)                   
+noPink 94.5652173913% (87/92)                   
+noBlue N/A% (0/0)   
+
+('[INFO] calculating f1 score', 3, 1, 7, 87)
+('F1 Score: ', 0.4285714285714285)
+('Precision: ', 0.75)
+('Recall: ', 0.3)

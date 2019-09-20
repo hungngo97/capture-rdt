@@ -53,7 +53,8 @@ CANNOT_DETECT = 'CANNOT_DETECT'
 
 
 class ImageProcessorScrape(ImageProcessor):
-    def __init__(self):
+    def __init__(self, output_path):
+        self.output_path = output_path
         ImageProcessor.__init__(self)
 
     def storeEnhancedScan(self, url, dst):
@@ -71,7 +72,7 @@ class ImageProcessorScrape(ImageProcessor):
         for imageType in [RDT_SCAN, MANUAL_PHOTO]:
             url = baseURL + imageType + '.png'
             imageFileName = readImageFromURL(
-                url, isManualPhoto=(imageType == MANUAL_PHOTO))
+                url, isManualPhoto=(imageType == MANUAL_PHOTO), output_path=self.output_path)
             if (imageFileName == 'NOT_FOUND'):
                 print('[INFO] URL invalid..')
                 return None
