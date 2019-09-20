@@ -18,6 +18,18 @@ def calculatePrecisionScore(truePositive, falsePositive):
     return 'N/A'
 
 
+def calculateTruePositiveRate(truePositive, falseNegative):
+    if truePositive + falseNegative > 0:
+        return truePositive / (truePositive + falseNegative)
+    return 'N/A'
+
+
+def calculateFalsePositiveRate(falsePositive, trueNegative):
+    if falsePositive + trueNegative > 0:
+        return falsePositive / (falsePositive + trueNegative)
+    return 'N/A'
+
+
 def calculateRecallScore(truePositive, falseNegative):
     if truePositive + falseNegative > 0:
         return truePositive / (truePositive + falseNegative)

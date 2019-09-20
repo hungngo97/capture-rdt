@@ -15,7 +15,7 @@ from constants import (OVER_EXP_THRESHOLD, UNDER_EXP_THRESHOLD, OVER_EXP_WHITE_C
                        FIDUCIAL_POSITION_MAX, FIDUCIAL_POSITION_MIN, FIDUCIAL_TO_CONTROL_LINE_OFFSET,
                        RESULT_WINDOW_RECT_HEIGHT, RESULT_WINDOW_RECT_WIDTH_PADDING, FIDUCIAL_COUNT,
                        FIDUCIAL_DISTANCE, ANGLE_THRESHOLD, LINE_SEARCH_WIDTH, CONTROL_LINE_POSITION, 
-                       TEST_A_LINE_POSITION, TEST_B_LINE_POSITION, INTENSITY_THRESHOLD, PEAK_DIST_THRESHOLD,
+                       TEST_A_LINE_POSITION, TEST_B_LINE_POSITION, INTENSITY_THRESHOLD, PEAK_HEIGHT_THRESHOLD,
                        CONTROL_INTENSITY_PEAK_THRESHOLD, TEST_INTENSITY_PEAK_THRESHOLD, DETECTION_RANGE)
 from result import (ExposureResult, CaptureResult, InterpretationResult, SizeResult)
 from utils import (show_image, resize_image, Point, Rect, crop_rect, peakdet)
@@ -737,7 +737,7 @@ class ImageProcessor:
         colLightness = [255] - colLightness
         print('[INFO] lightness shape', colLightness.shape)
         # Find peak and peak should correspond to lines
-        maxtab, mintab = peakdet(colLightness, PEAK_DIST_THRESHOLD)
+        maxtab, mintab = peakdet(colLightness, PEAK_HEIGHT_THRESHOLD)
         print('Max', maxtab)
         print('Min', mintab)
         print('Total strip count', len(maxtab))

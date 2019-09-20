@@ -7,7 +7,8 @@ from urlConstants import (
     S3_URL_BASE_PATH, TYPE, BARCODES, RDT_SCAN, ENHANCED_SCAN, MANUAL_PHOTO
 )
 from utils import (
-    calculateF1Score, calculatePrecisionScore, calculateRecallScore
+    calculateF1Score, calculatePrecisionScore, calculateRecallScore,
+    calculateFalsePositiveRate, calculateTruePositiveRate
 )
 import math
 import json
@@ -112,7 +113,8 @@ IntepretationResultMappingsIndex = {
 
 class ImageProcessorScrapeReport(ImageProcessorScrape):
     def __init__(self):
-        self.colLabels = ['No interpretation', 'Both', 'Test A', 'Test B', 'No Flu']
+        self.colLabels = ['No interpretation',
+                          'Both', 'Test A', 'Test B', 'No Flu']
         ImageProcessorScrape.__init__(self)
         """
             Row indices correspond to the labels of highcontrast line or user response
@@ -159,7 +161,6 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         print('[INFO] JSON result', np.array(arr))
         return np.array(arr).astype('float32')
 
-
     def processBarcode(self, barcode, pcr_result, results_user_response,
                        rdt_result, high_contrast_line_answer, test_strip_boundary, expert_response):
         print('[INFO] start processBarcode..')
@@ -178,7 +179,8 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         URL_PATH = str(S3_URL_BASE_PATH) + \
             str(SECRET) + '/cough/' + str(barcode)
         print('[INFO] current URL path', URL_PATH)
-        interpretResult = self.interpretResultFromURL(URL_PATH, URL_PATH, boundary)
+        interpretResult = self.interpretResultFromURL(
+            URL_PATH, URL_PATH, boundary)
         if interpretResult is None:
             # ===== TODO: Do something else if interpretResult is None
             self.failDetectionCount += 1
@@ -220,8 +222,9 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
 
         if (expert_response and (isinstance(expert_response, str) or not math.isnan(expert_response))):
             expertResponseRowIndex = ExpertResponseIndex[expert_response]
-            self.resultAndroidComparisonWithExpertResponse[expertResponseRowIndex][rdtResultColumnIndex] += 1
-    
+            self.resultAndroidComparisonWithExpertResponse[
+                expertResponseRowIndex][rdtResultColumnIndex] += 1
+
         if (pcr_result and (isinstance(pcr_result, str) or not math.isnan(pcr_result))):
             pcrRowIndex = PCRMappingsIndex[pcr_result]
             self.resultAndroidComparisonWithPCRResult[pcrRowIndex][rdtResultColumnIndex] += 1
@@ -335,40 +338,40 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         for index, row in df.iterrows():
             # row = df.iloc[DEBUG_counter]
             # try:
-                if row[BARCODE]:
-                    # DEBUG
-                    print('[INFO] row number: ', index)
-                    print(BARCODE, row[BARCODE])
-                    print(PCR_RESULT, row[PCR_RESULT])
-                    print(RESULTS_USER_RESPONSE, row[RESULTS_USER_RESPONSE])
-                    print(RDT_RESULT, row[RDT_RESULT])
-                    print(HIGH_CONTRAST_LINE_ANSWER,
-                        row[HIGH_CONTRAST_LINE_ANSWER])
-                    print(TEST_STRIP_BOUNDARY, row[TEST_STRIP_BOUNDARY])
-                    print(EXPERT_RESPONSE, row[EXPERT_RESPONSE])
-                    print(type(row[RDT_RESULT]))
-                    # REPORT
-                    validBarcodes += 1
-                    if row[RDT_RESULT] and (isinstance(row[RDT_RESULT], str) or not math.isnan(row[RDT_RESULT])):
-                        IntepretationResultMappings[row[RDT_RESULT]] += 1
-                    if row[PCR_RESULT] and isinstance(row[PCR_RESULT], str) or not math.isnan(row[PCR_RESULT]):
-                        PCRMappings[row[PCR_RESULT]] += 1
-                    if row[RESULTS_USER_RESPONSE]and isinstance(row[RESULTS_USER_RESPONSE], str) or not math.isnan(row[RESULTS_USER_RESPONSE]):
-                        UserResponseMappings[row[RESULTS_USER_RESPONSE]] += 1
-                    if row[HIGH_CONTRAST_LINE_ANSWER] and isinstance(row[HIGH_CONTRAST_LINE_ANSWER], str) or not math.isnan(row[HIGH_CONTRAST_LINE_ANSWER]):
-                        HighContrastLineMappings[row[HIGH_CONTRAST_LINE_ANSWER]] += 1
-                    if row[EXPERT_RESPONSE] and isinstance(row[EXPERT_RESPONSE], str) or not math.isnan(row[EXPERT_RESPONSE]):
-                        ExpertResponseMappings[row[EXPERT_RESPONSE]] += 1
-                    
-                    self.processBarcode(row[BARCODE], row[PCR_RESULT], row[RESULTS_USER_RESPONSE],
-                                        row[RDT_RESULT], row[HIGH_CONTRAST_LINE_ANSWER], row[TEST_STRIP_BOUNDARY],row[EXPERT_RESPONSE])
+            if row[BARCODE]:
+                # DEBUG
+                print('[INFO] row number: ', index)
+                print(BARCODE, row[BARCODE])
+                print(PCR_RESULT, row[PCR_RESULT])
+                print(RESULTS_USER_RESPONSE, row[RESULTS_USER_RESPONSE])
+                print(RDT_RESULT, row[RDT_RESULT])
+                print(HIGH_CONTRAST_LINE_ANSWER,
+                      row[HIGH_CONTRAST_LINE_ANSWER])
+                print(TEST_STRIP_BOUNDARY, row[TEST_STRIP_BOUNDARY])
+                print(EXPERT_RESPONSE, row[EXPERT_RESPONSE])
+                print(type(row[RDT_RESULT]))
+                # REPORT
+                validBarcodes += 1
+                if row[RDT_RESULT] and (isinstance(row[RDT_RESULT], str) or not math.isnan(row[RDT_RESULT])):
+                    IntepretationResultMappings[row[RDT_RESULT]] += 1
+                if row[PCR_RESULT] and isinstance(row[PCR_RESULT], str) or not math.isnan(row[PCR_RESULT]):
+                    PCRMappings[row[PCR_RESULT]] += 1
+                if row[RESULTS_USER_RESPONSE]and isinstance(row[RESULTS_USER_RESPONSE], str) or not math.isnan(row[RESULTS_USER_RESPONSE]):
+                    UserResponseMappings[row[RESULTS_USER_RESPONSE]] += 1
+                if row[HIGH_CONTRAST_LINE_ANSWER] and isinstance(row[HIGH_CONTRAST_LINE_ANSWER], str) or not math.isnan(row[HIGH_CONTRAST_LINE_ANSWER]):
+                    HighContrastLineMappings[row[HIGH_CONTRAST_LINE_ANSWER]] += 1
+                if row[EXPERT_RESPONSE] and isinstance(row[EXPERT_RESPONSE], str) or not math.isnan(row[EXPERT_RESPONSE]):
+                    ExpertResponseMappings[row[EXPERT_RESPONSE]] += 1
 
-                    # BREAK DEBUG
-                    DEBUG_counter += 1
-                    if (db and DEBUG_counter > DEBUG_AMOUNT):
-                        break
-                total += 1
-            # except: 
+                self.processBarcode(row[BARCODE], row[PCR_RESULT], row[RESULTS_USER_RESPONSE],
+                                    row[RDT_RESULT], row[HIGH_CONTRAST_LINE_ANSWER], row[TEST_STRIP_BOUNDARY], row[EXPERT_RESPONSE])
+
+                # BREAK DEBUG
+                DEBUG_counter += 1
+                if (db and DEBUG_counter > DEBUG_AMOUNT):
+                    break
+            total += 1
+            # except:
             #     continue
         print('+++++++++++++++++++++++++++++++REPORT+++++++++++++++++++++++++++++++++++++')
         print('----------------------------Overall Statistics----------------------------')
@@ -381,23 +384,31 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         print('--------------------------Accuracy Table Comparison-----------------------')
         print('=======Python Result========')
         print('High Contrast Line Result Table')
-        self.printTable(HighContrastLineIndex.keys, self.colLabels, self.resultPythonComparisonWithHighContrastLineAnswer)
+        self.printTable(HighContrastLineIndex.keys, self.colLabels,
+                        self.resultPythonComparisonWithHighContrastLineAnswer)
         print('PCR Result Table')
-        self.printTable(PCRMappings.keys, self.colLabels, self.resultPythonComparisonWithPCRResult)
+        self.printTable(PCRMappings.keys, self.colLabels,
+                        self.resultPythonComparisonWithPCRResult)
         print('User Response Result Table')
-        self.printTable(UserResponseMappings.keys, self.colLabels, self.resultPythonComparisonWithUserResponse)
+        self.printTable(UserResponseMappings.keys, self.colLabels,
+                        self.resultPythonComparisonWithUserResponse)
         print('Expert Response Mappings')
-        self.printTable(ExpertResponseMappings.keys, self.colLabels, self.resultPythonComparisonWithExpertResponse)
-        self.reportPythonResultStatistics()
+        self.printTable(ExpertResponseMappings.keys, self.colLabels,
+                        self.resultPythonComparisonWithExpertResponse)
+        pythonResultStats = self.reportPythonResultStatistics()
         print('=======Android Result=========')
         print('High Contrast Line Result Table')
-        self.printTable(HighContrastLineIndex.keys, self.colLabels, self.resultAndroidComparisonWithHighContrastLineAnswer)
+        self.printTable(HighContrastLineIndex.keys, self.colLabels,
+                        self.resultAndroidComparisonWithHighContrastLineAnswer)
         print('PCR Result Table')
-        self.printTable(PCRMappings.keys, self.colLabels, self.resultAndroidComparisonWithPCRResult)
+        self.printTable(PCRMappings.keys, self.colLabels,
+                        self.resultAndroidComparisonWithPCRResult)
         print('User Response Result Table')
-        self.printTable(HighContrastLineIndex.keys, self.colLabels, self.resultAndroidComparisonWithUserResponse)
+        self.printTable(HighContrastLineIndex.keys, self.colLabels,
+                        self.resultAndroidComparisonWithUserResponse)
         print('Expert Response Mappings')
-        self.printTable(ExpertResponseIndex.keys, self.colLabels, self.resultAndroidComparisonWithExpertResponse)
+        self.printTable(ExpertResponseIndex.keys, self.colLabels,
+                        self.resultAndroidComparisonWithExpertResponse)
         self.reportAndroidResultStatistics()
         print('=======Line Count=======')
         print('Line count table')
@@ -408,6 +419,8 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         # print('Fail Detection Count', self.failDetectionCount)
         # print('Fail detection list')
         # print(json.dumps(self.failDetectionDetailList, sort_keys=True, indent=4))
+
+        return pythonResultStats
 
     def reportPythonResultStatistics(self):
         # Column
@@ -440,14 +453,14 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 lines += num
                 totalInCurrentRow += num
             print('True Label (Contrast Line Number):  ',
-                                    {v: k for k, v in HighContrastLineIndex.items()}[correctContrastLineNumber])
+                  {v: k for k, v in HighContrastLineIndex.items()}[correctContrastLineNumber])
             print('Number of correct prediction: ', totalCorrectInCurrentRow)
             print('Total number of Labels: ', totalInCurrentRow)
             print('Percentage Accuracy: ',
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
             currResult[{v: k for k, v in HighContrastLineIndex.items()}[correctContrastLineNumber]] = {
-                'androidResult' : totalCorrectInCurrentRow,
+                'androidResult': totalCorrectInCurrentRow,
                 'result': totalInCurrentRow,
                 'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
             }
@@ -461,19 +474,19 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             'androidResult': totalCorrect,
             'result': lines,
             'accuracy': totalCorrect /
-              lines if lines != 0 else 'N/A'
+            lines if lines != 0 else 'N/A'
         }
         result.append({'High Contrast': currResult})
-                # Column
+        # Column
         #         No interpretation = 0
         # Both = 1
         # testA = 2
         # testB = 3
         # No flu = 4
         # PCR Result
-            #   'negative': 0,
-            # 'flu A': 1,
-            # 'flu B': 2
+        #   'negative': 0,
+        # 'flu A': 1,
+        # 'flu B': 2
         totalCorrect = 0
         lines = 0
         currResult = {}
@@ -484,7 +497,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 # TODO: not sure if this is correct. Ask CJ!
                 if (correctLabel == 0 and (i == 4 or i == 0)) or \
                     ((correctLabel == 1 and (i == 2 or i == 1))) or \
-                    (correctLabel == 2 and (i == 1 or i == 3)):
+                        (correctLabel == 2 and (i == 1 or i == 3)):
                     totalCorrect += num
                     totalCorrectInCurrentRow += num
                 lines += num
@@ -497,7 +510,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
             currResult[{v: k for k, v in PCRMappingsIndex.items()}[correctLabel]] = {
-                'androidResult' : totalCorrectInCurrentRow,
+                'androidResult': totalCorrectInCurrentRow,
                 'result': totalInCurrentRow,
                 'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
             }
@@ -511,7 +524,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             'androidResult': totalCorrect,
             'result': lines,
             'accuracy': totalCorrect /
-              lines if lines != 0 else 'N/A'
+            lines if lines != 0 else 'N/A'
         }
         result.append({'PCR': currResult})
         # User Reponse
@@ -526,7 +539,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             for i, num in enumerate(row):
                 # TODO: not sure if this is correct. Ask CJ!
                 if (correctLabel == 0 and (i == 4)) or \
-                    ((correctLabel == 1 and (i != 0 and i != 4))):
+                        ((correctLabel == 1 and (i != 0 and i != 4))):
                     totalCorrect += num
                     totalCorrectInCurrentRow += num
                 lines += num
@@ -539,7 +552,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
             currResult[{v: k for k, v in UserResponseIndex.items()}[correctLabel]] = {
-                'androidResult' : totalCorrectInCurrentRow,
+                'androidResult': totalCorrectInCurrentRow,
                 'result': totalInCurrentRow,
                 'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
             }
@@ -553,13 +566,13 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             'androidResult': totalCorrect,
             'result': lines,
             'accuracy': totalCorrect /
-              lines if lines != 0 else 'N/A'
+            lines if lines != 0 else 'N/A'
         }
         result.append({'User Response': currResult})
         self.printF1ScoreUserResponse(currResult)
         self.printResultTable(result)
 
-         # Expert Reponse
+        # Expert Reponse
         # Column
         # No interpretation = 0
         # Both = 1
@@ -597,7 +610,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
             currResult[{v: k for k, v in ExpertResponseIndex.items()}[correctLabel]] = {
-                'androidResult' : totalCorrectInCurrentRow,
+                'androidResult': totalCorrectInCurrentRow,
                 'result': totalInCurrentRow,
                 'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
             }
@@ -611,20 +624,22 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             'androidResult': totalCorrect,
             'result': lines,
             'accuracy': totalCorrect /
-              lines if lines != 0 else 'N/A'
+            lines if lines != 0 else 'N/A'
         }
         result.append({'Expert Response': currResult})
-        self.printF1ScoreExpertResponse(currResult, PYTHON)
+        python_expert_response = self.printF1ScoreExpertResponse(
+            currResult, PYTHON)
         self.printResultTable(result)
 
+        return python_expert_response
 
     def reportAndroidResultStatistics(self):
         # Column
-    # 'Both': 0,
-    # 'Negative': 1,
-    # 'Flu B': 2,
-    # 'Flu A': 3,
-    # 'No control line': 4
+        # 'Both': 0,
+        # 'Negative': 1,
+        # 'Flu B': 2,
+        # 'Flu A': 3,
+        # 'No control line': 4
         # ROw
         #  'oneLine': 1,
         # 'noneOfTheAbove': 0,
@@ -650,14 +665,14 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             # print(list(HighContrastLineIndex.keys()))
             print('True Label (Contrast Line Number):  ',
                   {v: k for k, v in HighContrastLineIndex.items()}[correctContrastLineNumber])
-        
+
             print('Number of correct prediction: ', totalCorrectInCurrentRow)
             print('Total number of Labels: ', totalInCurrentRow)
             print('Percentage Accuracy: ',
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
             currResult[{v: k for k, v in HighContrastLineIndex.items()}[correctContrastLineNumber]] = {
-                'androidResult' : totalCorrectInCurrentRow,
+                'androidResult': totalCorrectInCurrentRow,
                 'result': totalInCurrentRow,
                 'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
             }
@@ -671,19 +686,19 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             'androidResult': totalCorrect,
             'result': lines,
             'accuracy': totalCorrect /
-              lines if lines != 0 else 'N/A'
+            lines if lines != 0 else 'N/A'
         }
         result.append({'High Contrast': currResult})
-                # Column
+        # Column
     # 'Both': 0,
     # 'Negative': 1,
     # 'Flu B': 2,
     # 'Flu A': 3,
     # 'No control line': 4
         # PCR Result
-            #   'negative': 0,
-            # 'flu A': 1,
-            # 'flu B': 2
+        #   'negative': 0,
+        # 'flu A': 1,
+        # 'flu B': 2
         totalCorrect = 0
         lines = 0
         currResult = {}
@@ -694,7 +709,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 # TODO: not sure if this is correct. Ask CJ!
                 if (correctLabel == 0 and (i == 1)) or \
                     ((correctLabel == 1 and (i == 3))) or \
-                    (correctLabel == 2 and (i == 2)):
+                        (correctLabel == 2 and (i == 2)):
                     totalCorrect += num
                     totalCorrectInCurrentRow += num
                 lines += num
@@ -707,7 +722,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
             currResult[{v: k for k, v in PCRMappingsIndex.items()}[correctLabel]] = {
-                'androidResult' : totalCorrectInCurrentRow,
+                'androidResult': totalCorrectInCurrentRow,
                 'result': totalInCurrentRow,
                 'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
             }
@@ -721,7 +736,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             'androidResult': totalCorrect,
             'result': lines,
             'accuracy': totalCorrect /
-              lines if lines != 0 else 'N/A'
+            lines if lines != 0 else 'N/A'
         }
         result.append({'PCR': currResult})
         # User Reponse
@@ -730,7 +745,6 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
     # 'Flu B': 2,
     # 'Flu A': 3,
     # 'No control line': 4
-
 
         # 'Negative': 0,
         # 'Positive': 1
@@ -744,7 +758,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             for i, num in enumerate(row):
                 # TODO: not sure if this is correct. Ask CJ!
                 if (correctLabel == 0 and (i == 1)) or \
-                    ((correctLabel == 1 and (i != 1))):
+                        ((correctLabel == 1 and (i != 1))):
                     totalCorrect += num
                     totalCorrectInCurrentRow += num
                 lines += num
@@ -757,7 +771,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
             currResult[{v: k for k, v in UserResponseIndex.items()}[correctLabel]] = {
-                'androidResult' : totalCorrectInCurrentRow,
+                'androidResult': totalCorrectInCurrentRow,
                 'result': totalInCurrentRow,
                 'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
             }
@@ -771,7 +785,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             'androidResult': totalCorrect,
             'result': lines,
             'accuracy': totalCorrect /
-              lines if lines != 0 else 'N/A'
+            lines if lines != 0 else 'N/A'
         }
         result.append({'User Response': currResult})
         self.printF1ScoreUserResponse(currResult)
@@ -815,7 +829,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                   totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A')
             print('~~~~~~~~')
             currResult[{v: k for k, v in ExpertResponseIndex.items()}[correctLabel]] = {
-                'androidResult' : totalCorrectInCurrentRow,
+                'androidResult': totalCorrectInCurrentRow,
                 'result': totalInCurrentRow,
                 'accuracy': totalCorrectInCurrentRow / totalInCurrentRow if totalInCurrentRow != 0 else 'N/A'
             }
@@ -829,7 +843,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             'androidResult': totalCorrect,
             'result': lines,
             'accuracy': totalCorrect /
-              lines if lines != 0 else 'N/A'
+            lines if lines != 0 else 'N/A'
         }
         result.append({'Expert Response': currResult})
         self.printF1ScoreExpertResponse(currResult, ANDROID)
@@ -861,28 +875,49 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             totalCorrectInCurrentRow = 0
             totalInCurrentRow = 0
             for i, num in enumerate(row):
-                if correctLabel == 0: #No Pink: Negative
+                if correctLabel == 0:  # No Pink: Negative
                     if i == 4:
                         trueNegative += num
                     elif i == 1 or i == 2 or i == 3:
                         falsePositive += num
-                #elif (correctLabel == 1 and i == 2) or \
-                #    (correctLabel == 1 and i == 3) or \
-                #    (correctLabel == 1 and i == 1): # Positive cases
                 elif correctLabel == 1 or correctLabel == 3 or correctLabel == 4:
-                    if i == 1 or i == 2 or i == 3:
+                    if (correctLabel == 1 and i == 2) or \
+                        (correctLabel == 3 and i == 3) or \
+                            (correctLabel == 4 and i == 1):  # Positive cases
                         truePositive += num
                     elif i == 4:
                         falseNegative += num
                 # Ignore noBlue and bad Picture
-        print('[INFO] calculating f1 score', truePositive, falsePositive, falseNegative, trueNegative)
+        print('[INFO] calculating f1 score', truePositive,
+              falsePositive, falseNegative, trueNegative)
         precision = calculatePrecisionScore(truePositive, falsePositive)
         recall = calculateRecallScore(truePositive, falseNegative)
-        f1Score = calculateF1Score(precision, recall)        
+        f1Score = calculateF1Score(precision, recall)
+        falsePositiveRate = calculateFalsePositiveRate(
+            falsePositive, trueNegative)
+        truePositiveRate = calculateTruePositiveRate(
+            truePositive, falseNegative)
+
         # Output
         print('F1 Score: ', f1Score)
         print('Precision: ', precision)
         print('Recall: ', recall)
+        print('False Positive rate: ', falsePositiveRate)
+        print('True Positive rate: ', truePositiveRate )
+
+        return {
+            'python_expert_response': {
+                'truePositive': truePositive,
+                'falsePositive': falsePositive,
+                'trueNegative': trueNegative,
+                'falseNegative': falseNegative,
+                'precision': precision,
+                'recall': recall,
+                'f1Score': f1Score,
+                'falsePositiveRate': falsePositiveRate,
+                'truePositiveRate': truePositiveRate
+            }
+        }
 
     def printF1ScoreUserResponse(self, result):
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~')
@@ -892,13 +927,15 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         print('Precision: ', precision)
         print('Recall: ', recall)
 
-
     def calculateF1ScoreUserResponse(self, result):
         truePositive = result['Positive']['androidResult']
-        falsePositive = result['Negative']['result'] - result['Negative']['androidResult']
-        falseNegative = result['Positive']['result'] - result['Positive']['androidResult']
+        falsePositive = result['Negative']['result'] - \
+            result['Negative']['androidResult']
+        falseNegative = result['Positive']['result'] - \
+            result['Positive']['androidResult']
         trueNegative = result['Negative']['androidResult']
-        print('[INFO] calculating f1 score', truePositive, falsePositive, falseNegative, trueNegative)
+        print('[INFO] calculating f1 score', truePositive,
+              falsePositive, falseNegative, trueNegative)
         precision = calculatePrecisionScore(truePositive, falsePositive)
         recall = calculateRecallScore(truePositive, falseNegative)
         f1Score = calculateF1Score(precision, recall)
@@ -909,7 +946,8 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         lines = ["", "", "", "", "", "", "", ""]
         print(result)
         for category in result:
-            lines[0] += str(list(category.keys())[0]) + "                               "
+            lines[0] += str(list(category.keys())[0]) + \
+                "                               "
             categoryResult = category[list(category.keys())[0]]
             i = 1
             print(categoryResult)
@@ -917,9 +955,11 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 v = categoryResult[k]
                 # print(str(k) + " " + str(v['accuracy']) + "% " + "(" + str(v['androidResult']) + "/" + str(v['result']) + ")     ")
                 if (v['accuracy'] != 'N/A'):
-                    lines[i] += str(k) + " " + str(v['accuracy'] * 100) + "% " + "(" + str(v['androidResult']) + "/" + str(v['result']) + ")                   "
+                    lines[i] += str(k) + " " + str(v['accuracy'] * 100) + "% " + "(" + str(
+                        v['androidResult']) + "/" + str(v['result']) + ")                   "
                 else:
-                    lines[i] += str(k) + " " + str(v['accuracy']) + "% " + "(" + str(v['androidResult']) + "/" + str(v['result']) + ")                   "
+                    lines[i] += str(k) + " " + str(v['accuracy']) + "% " + "(" + str(
+                        v['androidResult']) + "/" + str(v['result']) + ")                   "
                 i += 1
                 # print(lines[i])
         for line in lines:
@@ -951,4 +991,3 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
     def printTable(self, rowLabels, colLabels, table):
         for i, row in enumerate(table):
             print(row)
-
