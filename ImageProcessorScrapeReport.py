@@ -837,7 +837,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
 
     def printF1ScoreExpertResponse(self, result, result_platform):
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~')
-        result_platform = None
+        result_table = None
         if result_platform == ANDROID:
             result_table = self.resultAndroidComparisonWithExpertResponse
         elif result_platform == PYTHON:
@@ -857,22 +857,23 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         # 'yesAboveAndBelowBlue': 4,
         # 'noBlue': 5
         falseNegative, falsePositive, trueNegative, truePositive = 0, 0, 0, 0
-        for correctLabel, row in enumerate(result_platform):
+        for correctLabel, row in enumerate(result_table):
             totalCorrectInCurrentRow = 0
             totalInCurrentRow = 0
             for i, num in enumerate(row):
                 if correctLabel == 0: #No Pink: Negative
-                    if i == 4: 
+                    if i == 4:
                         trueNegative += num
-                    elif i != 5:
-                        falseNegative += num
-                elif (correctLabel == 1 and i == 2) or \
-                    (correctLabel == 1 and i == 3) or \
-                    (correctLabel == 1 and i == 1): # Positive cases
-                    if i == correctLabel:
-                        truePositive += num
-                    elif i != 5:
+                    elif i == 1 or i == 2 or i == 3:
                         falsePositive += num
+                #elif (correctLabel == 1 and i == 2) or \
+                #    (correctLabel == 1 and i == 3) or \
+                #    (correctLabel == 1 and i == 1): # Positive cases
+                elif correctLabel == 1 or correctLabel == 3 or correctLabel == 4:
+                    if i == 1 or i == 2 or i == 3:
+                        truePositive += num
+                    elif i == 4:
+                        falseNegative += num
                 # Ignore noBlue and bad Picture
         print('[INFO] calculating f1 score', truePositive, falsePositive, falseNegative, trueNegative)
         precision = calculatePrecisionScore(truePositive, falsePositive)
