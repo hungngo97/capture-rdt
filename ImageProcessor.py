@@ -19,6 +19,7 @@ from constants import (OVER_EXP_THRESHOLD, UNDER_EXP_THRESHOLD, OVER_EXP_WHITE_C
                        CONTROL_INTENSITY_PEAK_THRESHOLD, TEST_INTENSITY_PEAK_THRESHOLD, DETECTION_RANGE)
 from result import (ExposureResult, CaptureResult, InterpretationResult, SizeResult)
 from utils import (show_image, resize_image, Point, Rect, crop_rect, peakdet)
+import json
 
 """
     TODO: 
@@ -725,6 +726,9 @@ class ImageProcessor:
         return self.readLine(img, testLinePosition, False)
 
     def detectLinesWithPeak(self, img):
+        variables = {}
+        with open('variables/variables.json') as json_file:
+            variables = json.load(json_file)
         print('[INFO] start detectLinesWithPeak')
         # HSL so only take the L channel to distinguish lines
         print('[INFO] result img shape', img.shape)
@@ -737,7 +741,7 @@ class ImageProcessor:
         colLightness = [255] - colLightness
         print('[INFO] lightness shape', colLightness.shape)
         # Find peak and peak should correspond to lines
-        maxtab, mintab = peakdet(colLightness, PEAK_HEIGHT_THRESHOLD)
+        maxtab, mintab = peakdet(colLightness, variables["PEAK_HEIGHT_THRESHOLD"])
         print('Max', maxtab)
         print('Min', mintab)
         print('Total strip count', len(maxtab))

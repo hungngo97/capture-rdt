@@ -42,6 +42,9 @@ python scrape.py --barcodes input/barcodes.txt
 # To run algorithm report anaysis, provide a path to the csv file
 python report.py --f resources/query.csv
 
+# To generate ROC curve
+python rocCurveExpertResponse.py --f resources/query6.csv --min 110 --max 130 --step 20 
+
 ```
 
 ## Author

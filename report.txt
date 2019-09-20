@@ -336,6 +336,15 @@ threeLines 16.6666666667% (1/6)                   yesAboveBlue 63.6363636364% (7
 noPink 93.4782608696% (86/92)                   
 noBlue N/A% (0/0)     
 
+High Contrast                               PCR                               User Response                               Expert Response                               
+twoLines 54.5454545455% (12/22)                   flu B 0.0% (0/8)                   Positive 54.8387096774% (17/31)                   yesAboveAndBelowBlue N/A% (0/0)                   
+noneOfTheAbove 0.0% (0/9)                   flu A 28.2051282051% (11/39)                   overall 88.3495145631% (182/206)                   overall 90.6862745098% (185/204)                   
+overall 81.067961165% (167/206)                   overall 74.025974026% (114/154)                   Negative 94.2857142857% (165/175)                   yesBelowBlue N/A% (0/0)                   
+oneLine 93.9024390244% (154/164)                   negative 96.261682243% (103/107)                   badPicture N/A% (0/0)                   
+threeLines 9.09090909091% (1/11)                   yesAboveBlue 66.6666666667% (14/21)                   
+noPink 93.4426229508% (171/183)                   
+noBlue N/A% (0/0)          
+
 ('[INFO] calculating f1 score', 7, 2, 3, 86)
 ('F1 Score: ', 0.7368421052631577)
 ('Precision: ', 0.7777777777777778)
