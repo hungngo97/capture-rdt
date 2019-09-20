@@ -112,10 +112,10 @@ IntepretationResultMappingsIndex = {
 
 
 class ImageProcessorScrapeReport(ImageProcessorScrape):
-    def __init__(self):
+    def __init__(self, output_path):
         self.colLabels = ['No interpretation',
                           'Both', 'Test A', 'Test B', 'No Flu']
-        ImageProcessorScrape.__init__(self)
+        ImageProcessorScrape.__init__(self, output_path)
         """
             Row indices correspond to the labels of highcontrast line or user response
             Column indices correspond to the labels of the interpret result.

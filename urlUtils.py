@@ -11,7 +11,7 @@ from utils import (
 import cv2 as cv
 
 
-def readImageFromURL(url, isManualPhoto=False):
+def readImageFromURL(url, isManualPhoto=False, output_path=''):
     response = requests.get(url)
     fileName = extractImageFileName(url)
     print('[Response] url', response, url, fileName)
