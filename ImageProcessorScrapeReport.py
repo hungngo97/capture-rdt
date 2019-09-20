@@ -916,7 +916,10 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
             for k in categoryResult:
                 v = categoryResult[k]
                 # print(str(k) + " " + str(v['accuracy']) + "% " + "(" + str(v['androidResult']) + "/" + str(v['result']) + ")     ")
-                lines[i] += str(k) + " " + str(v['accuracy'] * 100) + "% " + "(" + str(v['androidResult']) + "/" + str(v['result']) + ")                   "
+                if (v['accuracy'] != 'N/A'):
+                    lines[i] += str(k) + " " + str(v['accuracy'] * 100) + "% " + "(" + str(v['androidResult']) + "/" + str(v['result']) + ")                   "
+                else:
+                    lines[i] += str(k) + " " + str(v['accuracy']) + "% " + "(" + str(v['androidResult']) + "/" + str(v['result']) + ")                   "
                 i += 1
                 # print(lines[i])
         for line in lines:
