@@ -725,11 +725,13 @@ class ImageProcessor:
         return self.readLine(img, testLinePosition, False)
 
     def detectLinesWithPeak(self, img):
+        print(img.shape)
+        hls = cv.cvtColor(img, cv.COLOR_RGB2HLS)
         print('[INFO] start detectLinesWithPeak')
         # HSL so only take the L channel to distinguish lines
-        print('[INFO] result img shape', img.shape)
+        print('[INFO] result img shape', hls.shape)
         # show_image(img)
-        colLightness = np.mean(img[:,:,1], axis = 0)
+        colLightness = np.mean(hls[:,:,1], axis = 0)
         # plt.plot(colLightness)
         # plt.show()
         print('[INFO] avgLightness shape', colLightness.shape)
