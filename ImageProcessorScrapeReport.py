@@ -142,7 +142,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         self.resultAndroidComparisonWithExpertResponse = [
             [0, 0, 0, 0, 0, 0] for _ in range(len(ExpertResponseMappings))]
         self.lineCountResult = [
-            [0, 0, 0, 0, 0, 0] for _ in range(4)]
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] for _ in range(4)]
         self.failDetectionCount = 0
         self.failDetectionDetailList = []
 
@@ -915,7 +915,8 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 'recall': recall,
                 'f1Score': f1Score,
                 'falsePositiveRate': falsePositiveRate,
-                'truePositiveRate': truePositiveRate
+                'truePositiveRate': truePositiveRate,
+                'confusionMatrix': result_table
             }
         }
 

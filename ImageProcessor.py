@@ -729,11 +729,14 @@ class ImageProcessor:
         variables = {}
         with open('variables/variables.json') as json_file:
             variables = json.load(json_file)
+        print(img.shape)
+        # show_image(img)
+        hls = cv.cvtColor(img, cv.COLOR_RGB2HLS)
         print('[INFO] start detectLinesWithPeak')
         # HSL so only take the L channel to distinguish lines
         print('[INFO] result img shape', img.shape)
-        # show_image(img)
-        colLightness = np.mean(img[:,:,1], axis = 0)
+        # show_image(hls)
+        colLightness = np.mean(hls[:,:,1], axis = 0)
         # plt.plot(colLightness)
         # plt.show()
         print('[INFO] avgLightness shape', colLightness.shape)

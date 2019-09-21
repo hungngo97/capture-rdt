@@ -11,7 +11,7 @@ def main():
                         help='number of URLs to debug')
     # This url passed in should be a list of url ( like a text file)
     args = parser.parse_args()
-    imgProc = ImageProcessorScrapeReport()
+    imgProc = ImageProcessorScrapeReport('')
     print('[INFO] start report..')
     imgProc.processFile(args.f, args.db)
 

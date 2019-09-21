@@ -16,7 +16,7 @@ def main():
     parser.add_argument('--debugCode', type=str, help='Barcode to debug')
     # This url passed in should be a list of url ( like a text file)
     args = parser.parse_args()
-    imgProc = ImageProcessorScrape()
+    imgProc = ImageProcessorScrape('')
     SECRET = ""
 
     # ================ DEBUG CODE ====================
