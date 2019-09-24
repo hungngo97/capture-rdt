@@ -100,16 +100,6 @@ class ImageProcessorScrape(ImageProcessor):
             # Interpret Result
             interpretResult = ImageProcessor.interpretResult(
                 self, imageFileName, boundary)
-            # if (interpretResult == None):
-            #     DIR_PATH = ROOT_DETECTION_DIR + '/' + FALSE_SUBDIR + '/' + NO_CONTROL_AREA_FOUND
-            # elif (interpretResult.testA and interpretResult.testB):
-            #     DIR_PATH += '/' + FLU_AB_SUBSUBDIR
-            # elif (interpretResult.testA):
-            #     DIR_PATH += '/' + FLU_A_SUBSUBDIR
-            # elif (interpretResult.testB):
-            #     DIR_PATH += '/' + FLU_B_SUBSUBDIR
-            # else:
-            #     DIR_PATH += '/' + NO_FLU_SUBSUBDIR
 
             if (interpretResult == None):
                 DIR_PATH = ROOT_DETECTION_DIR + '/' + FALSE_SUBDIR + '/' + NO_CONTROL_AREA_FOUND

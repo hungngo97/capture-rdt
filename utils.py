@@ -12,6 +12,23 @@ FILES_TO_DELETE = [
 ]
 
 
+def calculateROCStats(truePositive, falsePositive, trueNegative, falseNegative):
+    precision = calculatePrecisionScore(truePositive, falsePositive)
+    recall = calculateRecallScore(truePositive, falseNegative)
+    f1Score = calculateF1Score(precision, recall)
+    falsePositiveRate = calculateFalsePositiveRate(
+        falsePositive, trueNegative)
+    truePositiveRate = calculateTruePositiveRate(
+        truePositive, falseNegative)
+    # Output
+    print('F1 Score: ', f1Score)
+    print('Precision: ', precision)
+    print('Recall: ', recall)
+    print('False Positive rate: ', falsePositiveRate)
+    print('True Positive rate: ', truePositiveRate)
+    return (f1Score, precision, recall, falsePositiveRate, truePositiveRate)
+
+
 def calculatePrecisionScore(truePositive, falsePositive):
     if truePositive + falsePositive > 0:
         return truePositive / (truePositive + falsePositive)

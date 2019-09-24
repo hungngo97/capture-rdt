@@ -22,7 +22,8 @@ def process_images(payload):
     with open(payload['outputPath'] + 'variables/variables.json', 'w+') as json_file:
         json.dump(variables, json_file)
     reload(ImageProcessorScrapeReport)
-    imgProc = ImageProcessorScrapeReport.ImageProcessorScrapeReport(payload['outputPath'])
+    imgProc = ImageProcessorScrapeReport.ImageProcessorScrapeReport(
+        payload['outputPath'])
     pythonResultStats = imgProc.processFile(payload["file"], payload["db"])
 
     with open(payload['outputPath'] + 'log/rocPeakConstant/result.json', 'w+') as json_file:
@@ -30,6 +31,14 @@ def process_images(payload):
 
 
 """
+
+
+def createLogDirectory(self):
+    if not os.path.exists('log/rocPeakConstant'):
+        os.makedirs('log/rocPeakConstant')
+        print("Directory ", 'log/rocPeakConstant',  " Created ")
+    else:
+        print("Directory ", 'log/rocPeakConstant',  " already exists")
 
 
 def main():
@@ -100,6 +109,7 @@ def main():
     maxF1Score = -1
     maxF1Threshold = -1
     # Create target directory & all intermediate directories if don't exists
+    self.createLogDirectory()
     if not os.path.exists('log/rocPeakConstant'):
         os.makedirs('log/rocPeakConstant')
         print("Directory ", 'log/rocPeakConstant',  " Created ")
@@ -117,14 +127,14 @@ def main():
                     result = json.load(json_file)
                 if result['python_expert_response']['truePositiveRate'] == 'N/A' or \
                         result['python_expert_response']['falsePositiveRate'] == 'N/A' or \
-                        result['python_expert_response']['f1score'] == 'N/A':
+                        result['python_expert_response']['f1Score'] == 'N/A':
                     continue
 
                 threshold = int(file.split('.')[0].split('constant')[1])
                 print('with threshold ', threshold)
 
-                if (result['python_expert_response']['f1score'] > maxF1Score):
-                    maxF1Score = result['python_expert_response']['f1score']
+                if (result['python_expert_response']['f1Score'] > maxF1Score):
+                    maxF1Score = result['python_expert_response']['f1Score']
                     maxF1Threshold = threshold
                 tpr.append(result['python_expert_response']
                            ['truePositiveRate'])
@@ -143,14 +153,14 @@ def main():
                     print('FOUND result constant ' + str(i), result)
                     if result['python_expert_response']['truePositiveRate'] == 'N/A' or \
                             result['python_expert_response']['falsePositiveRate'] == 'N/A' or \
-                            result['python_expert_response']['f1score'] == 'N/A':
+                            result['python_expert_response']['f1Score'] == 'N/A':
                         continue
 
                     threshold = int(file.split('.')[0].split('constant')[1])
                     print('with threshold ', threshold)
 
-                    if (result['python_expert_response']['f1score'] > maxF1Score):
-                        maxF1Score = result['python_expert_response']['f1score']
+                    if (result['python_expert_response']['f1Score'] > maxF1Score):
+                        maxF1Score = result['python_expert_response']['f1Score']
                         maxF1Threshold = threshold
                     tpr.append(result['python_expert_response']
                                ['truePositiveRate'])
@@ -170,8 +180,8 @@ def main():
                 json.dump(variables, json_file)
             imgProc = ImageProcessorScrapeReport.ImageProcessorScrapeReport('')
             pythonResultStats = imgProc.processFile(args.f, args.db)
-            if (pythonResultStats['python_expert_response']['f1score'] > maxF1Score):
-                maxF1Score = pythonResultStats['python_expert_response']['f1score']
+            if (pythonResultStats['python_expert_response']['f1Score'] > maxF1Score):
+                maxF1Score = pythonResultStats['python_expert_response']['f1Score']
                 maxF1Threshold = i
             tpr.append(
                 pythonResultStats['python_expert_response']['truePositiveRate'])

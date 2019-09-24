@@ -23,21 +23,11 @@ import json
 
 """
     TODO: 
-    * debug 63299731, testAB, testB, testA maybe ask CJ about it (NOT DONE)
-    *** F1 score and specificity (NOT TESTED)
     *** test strip boundary column, it gives you the coordinates of the detected RDT. 
      so, you dont have to run SIFT. you can just use that to those points to crop the
       RDT and correct perspective. (DONE) --> Should we keep the old boundary from python and also
       detect on that to compare with the boundary from android data? (ASK CJ)
-    *** Calculate F1 Score for  "Strip Line Answer (expert)" 
-    **** Generate ROC curve (first by using Excel, then using Python code)  
-    **** Refactor GUI code to toggle debug for later usage
-    *** Scale down the image instead of scaling up the refimage
-    **** Figure is the invalid cases due to scaling thing or peak detection is failing or cropping
-    # fail
-    Ask CJ: Will there by any case that there is high contrast line but not user response?
-
-
+    **** Refactor GUI code to toggle debug for later usage (NOT DONE)
 """
 
 class ImageProcessor:
