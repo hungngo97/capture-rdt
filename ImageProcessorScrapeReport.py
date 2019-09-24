@@ -322,7 +322,7 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         self.reportAndroidResultStatistics()
 
         self.printLineCountStatistics()
-        self.printFailCasesStatistics()
+        # self.printFailCasesStatistics()
 
         return pythonResultStats
 

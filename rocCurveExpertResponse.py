@@ -10,6 +10,7 @@ from multiprocessing import cpu_count
 import ImageProcessorScrapeReport
 
 """
+TODO: for parallel processing
 def process_images(payload):
     # display the process ID for debugging and initialize the hashes
     # dictionary
@@ -33,12 +34,128 @@ def process_images(payload):
 """
 
 
-def createLogDirectory(self):
+def createLogDirectory():
     if not os.path.exists('log/rocPeakConstant'):
         os.makedirs('log/rocPeakConstant')
         print("Directory ", 'log/rocPeakConstant',  " Created ")
     else:
         print("Directory ", 'log/rocPeakConstant',  " already exists")
+
+
+def loadExistingResults():
+    thresholds = []
+    tpr = []
+    fpr = []
+    maxF1Score = -1
+    maxF1Threshold = -1
+    for file in os.listdir("log/rocPeakConstant/"):
+        if file.endswith(".json") and file.startswith("constant"):
+            print('found file ', file)
+            tpr, fpr, thresholds, maxF1Score, maxF1Threshold = self.processPeakConstantFile(
+                "log/rocPeakConstant/" + file, file, tpr, fpr, thresholds, maxF1Score, maxF1Threshold)
+    return (tpr, fpr, thresholds, maxF1Score, maxF1Threshold)
+
+
+def processPeakConstantFile(path, filename, tpr, fpr, thresholds, maxF1Score, maxF1Threshold):
+    result = {}
+    with open(path, 'r') as json_file:
+        result = json.load(json_file)
+    if result['python_expert_response']['truePositiveRate'] == 'N/A' or \
+            result['python_expert_response']['falsePositiveRate'] == 'N/A' or \
+            result['python_expert_response']['f1Score'] == 'N/A':
+        return None
+
+    threshold = int(filename.split('.')[0].split('constant')[1])
+    print('with threshold ', threshold)
+
+    if (result['python_expert_response']['f1Score'] > maxF1Score):
+        maxF1Score = result['python_expert_response']['f1Score']
+        maxF1Threshold = threshold
+    tpr.append(result['python_expert_response']
+               ['truePositiveRate'])
+    fpr.append(result['python_expert_response']
+               ['falsePositiveRate'])
+    thresholds.append(threshold)
+    return (tpr, fpr, thresholds, maxF1Score, maxF1Threshold)
+
+
+def processNewPeakConstant(threshold, tpr, fpr, maxF1Score, maxF1Threshold, f, db):
+    variables = {}
+    with open('variables/variables.json', 'r+') as json_file:
+        variables = json.load(json_file)
+    variables['PEAK_HEIGHT_THRESHOLD'] = threshold
+
+    with open('variables/variables.json', 'w+') as json_file:
+        json.dump(variables, json_file)
+    imgProc = ImageProcessorScrapeReport.ImageProcessorScrapeReport('')
+    pythonResultStats = imgProc.processFile(f, db)
+    if (pythonResultStats['python_expert_response']['f1Score'] > maxF1Score):
+        maxF1Score = pythonResultStats['python_expert_response']['f1Score']
+        maxF1Threshold = threshold
+    tpr.append(
+        pythonResultStats['python_expert_response']['truePositiveRate'])
+    fpr.append(
+        pythonResultStats['python_expert_response']['falsePositiveRate'])
+    return (pythonResultStats, tpr, fpr, maxF1Score, maxF1Threshold)
+
+
+def plotReports(tpr, fpr, thresholds, args):
+    tpr = np.array(tpr)
+    fpr = np.array(fpr)
+    ident = [0.0, 1.0]
+    inversefpr = np.array(map(lambda x: 1 - x, fpr))
+
+    font = {'family': 'serif',
+            'color':  'darkred',
+            'weight': 'normal',
+            'size': 13,
+            }
+    plt.figure(1)
+    plt.scatter(tpr, fpr, marker='o')
+    plt.plot(ident, ident, '--', linewidth=2)
+    plt.title('TPR vs FPR', fontdict=font)
+    plt.xlabel('TPR ', fontdict=font)
+    plt.ylabel('FPR', fontdict=font)
+    plt.savefig('log/rocPeakConstant/TPRvsFPR.png')
+
+    plt.figure(2)
+    plt.scatter(fpr, tpr, marker='o')
+    plt.plot(ident, ident, '--', linewidth=2)
+    plt.title('FPR vs TPR', fontdict=font)
+    plt.xlabel('FPR ', fontdict=font)
+    plt.ylabel('TPR', fontdict=font)
+    plt.savefig('log/rocPeakConstant/FPRvsTPR.png')
+
+    plt.figure(3)
+    plt.scatter(tpr, inversefpr, marker='o')
+    plt.plot(ident, ident, '--', linewidth=2)
+    plt.title('TPR vs 1 - FPR', fontdict=font)
+    plt.xlabel('TPR ', fontdict=font)
+    plt.ylabel('1 - FPR', fontdict=font)
+    plt.savefig('log/rocPeakConstant/TPRvsInverseFPR.png')
+
+    plt.figure(4)
+    plt.scatter(inversefpr, tpr, marker='o')
+    plt.plot(ident, ident, '--', linewidth=2)
+    plt.title('1 - FPR vs TPR', fontdict=font)
+    plt.xlabel('1 - FPR ', fontdict=font)
+    plt.ylabel('TPR', fontdict=font)
+    plt.savefig('log/rocPeakConstant/inverseFPRvsTPR.png')
+
+    fig = plt.figure(5)
+    ax1 = fig.add_subplot(111)
+    thresholds = np.arange(
+        args.min, args.max + 1, args.step) if len(thresholds) < 1 else np.array(thresholds)
+
+    print("TPR", tpr)
+    print("FPR", fpr)
+    print("THRESHOLDS", thresholds)
+    ax1.scatter(thresholds, tpr, s=10, c='b', marker="s", label='TPR')
+    ax1.scatter(thresholds, fpr, s=10, c='r', marker="o", label='FPR')
+    plt.legend(loc='best')
+    plt.xlabel('Threshold')
+    plt.savefig('log/rocPeakConstant/thresholdvsTPRvsFPR.png')
+    plt.show()
 
 
 def main():
@@ -57,6 +174,7 @@ def main():
     args = parser.parse_args()
 
     """
+    TODO: for parallel processing
     # determine the number of concurrent processes to launch when
     # distributing the load across the system, then create the list
     # of process IDs
@@ -109,150 +227,35 @@ def main():
     maxF1Score = -1
     maxF1Threshold = -1
     # Create target directory & all intermediate directories if don't exists
-    self.createLogDirectory()
-    if not os.path.exists('log/rocPeakConstant'):
-        os.makedirs('log/rocPeakConstant')
-        print("Directory ", 'log/rocPeakConstant',  " Created ")
-    else:
-        print("Directory ", 'log/rocPeakConstant',  " already exists")
+    createLogDirectory()
 
     if (not args.f):
         # Load from preexisting log files in directory and plot out the results
-        thresholds = []
-        for file in os.listdir("log/rocPeakConstant/"):
-            if file.endswith(".json") and file.startswith("constant"):
-                print('found file ', file)
-                result = {}
-                with open("log/rocPeakConstant/" + file, 'r') as json_file:
-                    result = json.load(json_file)
-                if result['python_expert_response']['truePositiveRate'] == 'N/A' or \
-                        result['python_expert_response']['falsePositiveRate'] == 'N/A' or \
-                        result['python_expert_response']['f1Score'] == 'N/A':
-                    continue
-
-                threshold = int(file.split('.')[0].split('constant')[1])
-                print('with threshold ', threshold)
-
-                if (result['python_expert_response']['f1Score'] > maxF1Score):
-                    maxF1Score = result['python_expert_response']['f1Score']
-                    maxF1Threshold = threshold
-                tpr.append(result['python_expert_response']
-                           ['truePositiveRate'])
-                fpr.append(result['python_expert_response']
-                           ['falsePositiveRate'])
-                thresholds.append(threshold)
+        tpr, fpr, thresholds, maxF1Score, maxF1Threshold = loadExistingResults()
     else:  # Start predicting the F1 results
         # Load from previous checkpoint if have it
         start = args.min
+        thresholds = []
         for i in range(args.min, args.max + 1, args.step):
             thresholdFilePath = 'log/rocPeakConstant/' + \
                 'constant' + str(i) + '.json'
             if os.path.exists(thresholdFilePath):
-                with open(thresholdFilePath, 'r') as json_file:
-                    result = json.load(json_file)
-                    print('FOUND result constant ' + str(i), result)
-                    if result['python_expert_response']['truePositiveRate'] == 'N/A' or \
-                            result['python_expert_response']['falsePositiveRate'] == 'N/A' or \
-                            result['python_expert_response']['f1Score'] == 'N/A':
-                        continue
-
-                    threshold = int(file.split('.')[0].split('constant')[1])
-                    print('with threshold ', threshold)
-
-                    if (result['python_expert_response']['f1Score'] > maxF1Score):
-                        maxF1Score = result['python_expert_response']['f1Score']
-                        maxF1Threshold = threshold
-                    tpr.append(result['python_expert_response']
-                               ['truePositiveRate'])
-                    fpr.append(result['python_expert_response']
-                               ['falsePositiveRate'])
+                processPeakConstantFile(
+                    thresholdFilePath, 'constant' + str(i) + '.json', tpr, fpr, thresholds, maxF1Score, maxF1Threshold)
                 start = i + args.step
             else:
                 break  # start from where it does not have cached result
 
         for i in range(start, args.max + 1, args.step):
-            variables = {}
-            with open('variables/variables.json', 'r+') as json_file:
-                variables = json.load(json_file)
-            variables['PEAK_HEIGHT_THRESHOLD'] = i
-
-            with open('variables/variables.json', 'w+') as json_file:
-                json.dump(variables, json_file)
-            imgProc = ImageProcessorScrapeReport.ImageProcessorScrapeReport('')
-            pythonResultStats = imgProc.processFile(args.f, args.db)
-            if (pythonResultStats['python_expert_response']['f1Score'] > maxF1Score):
-                maxF1Score = pythonResultStats['python_expert_response']['f1Score']
-                maxF1Threshold = i
-            tpr.append(
-                pythonResultStats['python_expert_response']['truePositiveRate'])
-            fpr.append(
-                pythonResultStats['python_expert_response']['falsePositiveRate'])
-
+            pythonResultStats, tpr, fpr, maxF1Score, maxF1Threshold = processNewPeakConstant(
+                i, tpr, fpr, maxF1Score, maxF1Threshold, args.f, args.db)
             with open('log/rocPeakConstant/constant' + str(i) + '.json', 'w+') as json_file:
                 json.dump(pythonResultStats, json_file)
 
         with open('log/rocPeakConstant/' + 'summary' + '.json', 'w+') as json_file:
             json.dump({"tpr": tpr, "fpr": fpr, "maxF1score": maxF1Score,
                        "maxf1threshold": maxF1Threshold}, json_file)
-
-    # tpr = np.array([0.5,0.7,0.8])
-    # fpr = np.array([0.4,0.6,0.9])
-    tpr = np.array(tpr)
-    fpr = np.array(fpr)
-    ident = [0.0, 1.0]
-    inversefpr = np.array(map(lambda x: 1 - x, fpr))
-
-    font = {'family': 'serif',
-            'color':  'darkred',
-            'weight': 'normal',
-            'size': 13,
-            }
-    plt.figure(1)
-    plt.scatter(tpr, fpr, marker='o')
-    plt.plot(ident, ident, '--', linewidth=2)
-    plt.title('TPR vs FPR', fontdict=font)
-    plt.xlabel('TPR ', fontdict=font)
-    plt.ylabel('FPR', fontdict=font)
-    plt.savefig('log/rocPeakConstant/TPRvsFPR.png')
-
-    plt.figure(2)
-    plt.scatter(fpr, tpr, marker='o')
-    plt.plot(ident, ident, '--', linewidth=2)
-    plt.title('FPR vs TPR', fontdict=font)
-    plt.xlabel('FPR ', fontdict=font)
-    plt.ylabel('TPR', fontdict=font)
-    plt.savefig('log/rocPeakConstant/FPRvsTPR.png')
-
-    plt.figure(3)
-    plt.scatter(tpr, inversefpr, marker='o')
-    plt.plot(ident, ident, '--', linewidth=2)
-    plt.title('TPR vs 1 - FPR', fontdict=font)
-    plt.xlabel('TPR ', fontdict=font)
-    plt.ylabel('1 - FPR', fontdict=font)
-    plt.savefig('log/rocPeakConstant/TPRvsInverseFPR.png')
-
-    plt.figure(4)
-    plt.scatter(inversefpr, tpr, marker='o')
-    plt.plot(ident, ident, '--', linewidth=2)
-    plt.title('1 - FPR vs TPR', fontdict=font)
-    plt.xlabel('1 - FPR ', fontdict=font)
-    plt.ylabel('TPR', fontdict=font)
-    plt.savefig('log/rocPeakConstant/inverseFPRvsTPR.png')
-
-    fig = plt.figure(5)
-    ax1 = fig.add_subplot(111)
-    thresholds = np.arange(
-        args.min, args.max + 1, args.step) if thresholds is None else np.array(thresholds)
-
-    print("TPR", tpr)
-    print("FPR", fpr)
-    print("THRESHOLDS", thresholds)
-    ax1.scatter(thresholds, tpr, s=10, c='b', marker="s", label='TPR')
-    ax1.scatter(thresholds, fpr, s=10, c='r', marker="o", label='FPR')
-    plt.legend(loc='best')
-    plt.xlabel('Threshold')
-    plt.savefig('log/rocPeakConstant/thresholdvsTPRvsFPR.png')
-    plt.show()
+    plotReports(tpr, fpr, thresholds, args)
 
 
 if __name__ == '__main__':
