@@ -937,9 +937,10 @@ class ImageProcessor:
             with open('interpretResult.txt', 'w') as file:
                 file.write(str(InterpretationResult(result, control, testA, testB, numberOfLines))) 
             if (testAColor != testA or testB != testBColor or control != controlLineColor):
-                with open('colorDifference.txt', 'w') as file:
-                    file.write(str('File name ' + str(src) + ' Color: ' + str(testAColor) + " ," + str(testBColor) + " ," + str(controlLineColor)))
-                    file.write(str('File name ' + str(src) + 'Position: ' + str(testA) + " , " + str(testB) + " , " + str(controlLineColor))) 
+                with open('colorDifference.txt', 'a') as file:
+                    file.write(str('File name ' + str(src) + ' Color: ' + str(testAColor) + " ," + str(testBColor) + " ," + str(controlLineColor)) + " \n")
+                    file.write(str('File name ' + str(src) + 'Position: ' + str(testA) + " , " + str(testB) + " , " + str(controlLineColor)) + "\n")
+                    file.write("========================")
             
             print('[INFO] detection result: ', str(InterpretationResult(result, control, testA, testB, numberOfLines)))
             print('[INFO] lines result', control, testA, testB)
