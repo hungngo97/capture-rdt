@@ -75,7 +75,7 @@ class ImageProcessorScrape(ImageProcessor):
                 url, isManualPhoto=(imageType == MANUAL_PHOTO), output_path=self.output_path)
             if (imageFileName == 'NOT_FOUND'):
                 print('[INFO] URL invalid..')
-                return None
+                continue
             parts = imageFileName.split('.')
             imageName = parts[0]
             imageExtension = parts[1]

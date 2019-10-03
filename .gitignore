@@ -8,3 +8,5 @@ result.png
 interpretResult.txt
 *.png
 log/
+.idea/*
+.vscode/*
