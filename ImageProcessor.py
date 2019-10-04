@@ -833,17 +833,6 @@ class ImageProcessor:
             i += 1
         return (False, False)
 
-        # Old version ( Start from left to right)
-        # colNeighborStartIndex = max(0, col - NUM_OF_NEIGHBOR_COLOR_DETECTION)
-        # colNeighborEndIndex = min(len(colHue), col + NUM_OF_NEIGHBOR_COLOR_DETECTION)
-        # isBlueLine, isRedLine = False, False
-        # for i in range(colNeighborStartIndex, colNeighborEndIndex):
-        #     if (colHue[i] >= 85 and colHue[i] < 130):
-        #         return (True, False)
-        #     if (colHue[col] >= 0 and colHue[col] <= 30) or \
-        #         (colHue[col] >= 140 and colHue[col] <= 180):
-        #         return (False, True)
-
     def isBlueLine(self, colHue, i):
         return colHue[i] >= 85 and colHue[i] < 130
     
