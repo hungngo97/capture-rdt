@@ -16,7 +16,8 @@ from constants import (OVER_EXP_THRESHOLD, UNDER_EXP_THRESHOLD, OVER_EXP_WHITE_C
                        RESULT_WINDOW_RECT_HEIGHT, RESULT_WINDOW_RECT_WIDTH_PADDING, FIDUCIAL_COUNT,
                        FIDUCIAL_DISTANCE, ANGLE_THRESHOLD, LINE_SEARCH_WIDTH, CONTROL_LINE_POSITION, 
                        TEST_A_LINE_POSITION, TEST_B_LINE_POSITION, INTENSITY_THRESHOLD, PEAK_HEIGHT_THRESHOLD,
-                       CONTROL_INTENSITY_PEAK_THRESHOLD, TEST_INTENSITY_PEAK_THRESHOLD, DETECTION_RANGE)
+                       CONTROL_INTENSITY_PEAK_THRESHOLD, TEST_INTENSITY_PEAK_THRESHOLD, DETECTION_RANGE,
+                       NUM_OF_NEIGHBOR_COLOR_DETECTION)
 from result import (ExposureResult, CaptureResult, InterpretationResult, SizeResult)
 from utils import (show_image, resize_image, Point, Rect, crop_rect, peakdet)
 import json
@@ -739,9 +740,9 @@ class ImageProcessor:
         with open('variables/variables.json') as json_file:
             variables = json.load(json_file)
         print(img.shape)
-        # show_image(img)
+        show_image(img)
         hls = cv.cvtColor(img, cv.COLOR_BGR2HLS) 
-        # show_image(hls)
+        show_image(hls)
         # hls1 = cv.cvtColor(img, cv.COLOR_RGB2HLS) 
         # show_image(hls1)
         # HSL so only take the L channel to distinguish lines
@@ -803,21 +804,54 @@ class ImageProcessor:
             # Blue color control line
             print('COlumn', col)
             print('Column hue', colHue[col])
-            if (colHue[col] >= 85 and colHue[col] < 130):
-                # (colHue[col] > 30 and colSaturation[col] >= 0 and colSaturation[col] < 26):
-                bluelines.append(col)
 
-            # Red color control line
-                #         if (colHue[col] >= 25 and colHue[col] <= 50) or \
-                # (colHue[col] < 25 and colSaturation[col] <= 55 and colSaturation[col] >= 30) or \
-                # (colHue[col] > 60 and colSaturation[col] <= 55 and colSaturation[col] >= 30):
-            if (colHue[col] >= 0 and colHue[col] <= 30) or \
-                (colHue[col] >= 140 and colHue[col] <= 180):
-                # (colHue[col] < 25 and colSaturation[col] <= 55 and colSaturation[col] >= 30):
+            isBlueLine, isRedLine = self.checkColumnColor(col, colHue)
+            if isBlueLine:
+                bluelines.append(col)
+            if isRedLine:
                 redlines.append(col)
         
         testA, testB, controlLine = self.checkLineRelativeDistance(bluelines, redlines)
         return testA, testB, controlLine
+
+    def checkColumnColor(self, col, colHue):
+        # Start from the middle out is better
+        i = 0
+        while (i < NUM_OF_NEIGHBOR_COLOR_DETECTION):
+            # Left
+            left = max(0, col - i)
+            if (self.isBlueLine(colHue, left)):
+                return (True, False)
+            if (self.isRedLine(colHue, left)):
+                return (False, True)
+            # Right
+            right = min(len(colHue), col + i)
+            if (self.isBlueLine(colHue, right)):
+                return (True, False)
+            if (self.isRedLine(colHue, right)):
+                return (False, True)
+            i += 1
+        return (False, False)
+
+        # Old version ( Start from left to right)
+        # colNeighborStartIndex = max(0, col - NUM_OF_NEIGHBOR_COLOR_DETECTION)
+        # colNeighborEndIndex = min(len(colHue), col + NUM_OF_NEIGHBOR_COLOR_DETECTION)
+        # isBlueLine, isRedLine = False, False
+        # for i in range(colNeighborStartIndex, colNeighborEndIndex):
+        #     if (colHue[i] >= 85 and colHue[i] < 130):
+        #         return (True, False)
+        #     if (colHue[col] >= 0 and colHue[col] <= 30) or \
+        #         (colHue[col] >= 140 and colHue[col] <= 180):
+        #         return (False, True)
+
+    def isBlueLine(self, colHue, i):
+        return colHue[i] >= 85 and colHue[i] < 130
+    
+    def isRedLine(self, colHue, i):
+        return (colHue[i] >= 0 and colHue[i] <= 30) or \
+                (colHue[i] >= 140 and colHue[i] <= 180)
+
+
 
     def checkLineRelativeDistance(self, bluelines, redlines):
         print('[INFO] bluelines', bluelines)
@@ -943,9 +977,11 @@ class ImageProcessor:
                     file.write("========================")
             
             print('[INFO] detection result: ', str(InterpretationResult(result, control, testA, testB, numberOfLines)))
-            print('[INFO] lines result', control, testA, testB)
-            return InterpretationResult(result, control, testA, testB, numberOfLines)
-            # return InterpretationResult(result, controlLineColor, testAColor, testBColor, numberOfLines)
+            print('[INFO] location lines result', control, testA, testB)
+            print('[INFO] color lines result', controlLineColor, testAColor, testBColor)
+            # return InterpretationResult(result, control, testA, testB, numberOfLines)
+            return InterpretationResult(result, controlLineColor, testAColor, testBColor, numberOfLines)
+        
         except Exception as e: 
             # Not detected found
             print("Something went wrong")
