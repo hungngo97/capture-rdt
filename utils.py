@@ -227,6 +227,12 @@ def rotate_image1(mat, angle):
 def resize_image(src, gray=True, scale_percent=400):
     img = cv.imread(
         src, cv.IMREAD_GRAYSCALE if gray else cv.IMREAD_UNCHANGED)
+    resized = resize_image_with_array(
+        img, gray=gray, scale_percent=scale_percent)
+    return resized
+
+
+def resize_image_with_array(img, gray=False, scale_percent=100):
     width = int(img.shape[1] * scale_percent / 100)
     height = int(img.shape[0] * scale_percent / 100)
     dim = (width, height)
