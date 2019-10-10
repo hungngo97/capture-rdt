@@ -32,9 +32,9 @@ def readImageFromURL(url, isManualPhoto=False, output_path=''):
         #     img, gray=True, scale_percent=18))
         print('[INFO] rotate manual photo')
         cv.imwrite(fileName, resize_image_with_array(
-            rotate_image1(img, 90), gray=True, scale_percent=18))
-        show_image(resize_image_with_array(
-            rotate_image1(img, 90), gray=True, scale_percent=18))
+            rotate_image1(img, 90), gray=True, scale_percent=30))
+        # show_image(resize_image_with_array(
+        #     rotate_image1(img, 90), gray=True, scale_percent=18))
     return fileName
 
 
