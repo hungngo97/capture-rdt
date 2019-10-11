@@ -31,8 +31,8 @@ def readImageFromURL(url, isManualPhoto=False, output_path=''):
         print('Reading')
         img = cv.imread(fileName, cv.IMREAD_UNCHANGED)
         height, width = img.shape[:2]
-        show_image(resize_image_with_array(
-            img, gray=True, scale_percent=18))
+        # show_image(resize_image_with_array(
+        #     img, gray=True, scale_percent=18))
 
         if isVertical(width, height):
             # rotate image
@@ -41,8 +41,8 @@ def readImageFromURL(url, isManualPhoto=False, output_path=''):
 
         cv.imwrite(fileName, resize_image_with_array(
             img, gray=True, scale_percent=30))
-        show_image(resize_image_with_array(
-            rotate_image1(img, 90), gray=True, scale_percent=18))
+        # show_image(resize_image_with_array(
+        #     rotate_image1(img, 90), gray=True, scale_percent=18))
     return fileName
 
 
