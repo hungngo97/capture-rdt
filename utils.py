@@ -71,6 +71,14 @@ def calculateF1Score(precision, recall):
     return 'N/A'
 
 
+def isLandscape(width, height):
+    return width > height
+
+
+def isVertical(width, height):
+    return height > width
+
+
 def peakdet(v, delta, x=None):
     """
     Converted from MATLAB script at http://billauer.co.il/peakdet.html

@@ -7,7 +7,9 @@ from utils import (
     rotate_image,
     show_image,
     rotate_image1,
-    resize_image_with_array
+    resize_image_with_array,
+    isLandscape,
+    isVertical
 )
 import cv2 as cv
 
@@ -28,13 +30,19 @@ def readImageFromURL(url, isManualPhoto=False, output_path=''):
     if (isManualPhoto):
         print('Reading')
         img = cv.imread(fileName, cv.IMREAD_UNCHANGED)
-        # show_image(resize_image_with_array(
-        #     img, gray=True, scale_percent=18))
-        print('[INFO] rotate manual photo')
+        height, width = img.shape[:2]
+        show_image(resize_image_with_array(
+            img, gray=True, scale_percent=18))
+
+        if isVertical(width, height):
+            # rotate image
+            print('[INFO] rotate manual photo')
+            img = rotate_image1(img, 90)
+
         cv.imwrite(fileName, resize_image_with_array(
-            rotate_image1(img, 90), gray=True, scale_percent=30))
-        # show_image(resize_image_with_array(
-        #     rotate_image1(img, 90), gray=True, scale_percent=18))
+            img, gray=True, scale_percent=30))
+        show_image(resize_image_with_array(
+            rotate_image1(img, 90), gray=True, scale_percent=18))
     return fileName
 
 
