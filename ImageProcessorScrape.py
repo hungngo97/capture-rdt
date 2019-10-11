@@ -13,7 +13,7 @@ from result import (
 from shutil import copyfile
 import cv2 as cv
 from utils import (
-    show_image, clear_files
+    show_image, clear_files, createFilePath
 )
 import os
 
@@ -50,6 +50,7 @@ NO_FLU_SUBSUBDIR = 'noFlu'
 INVALID_LINE_SUBSUBDIR = 'INVALID_LINE_SUBSUBDIR'
 NO_CONTROL_AREA_FOUND = 'NO_CONTROL_AREA_FOUND'
 CANNOT_DETECT = 'CANNOT_DETECT'
+ENHANCED_SCAN_FROM_DEVICE_SUCCESSFUL = 'ENHANCED_SCAN_FROM_DEVICE_SUCCESSFUL'
 
 
 class ImageProcessorScrape(ImageProcessor):
@@ -57,86 +58,122 @@ class ImageProcessorScrape(ImageProcessor):
         self.output_path = output_path
         ImageProcessor.__init__(self)
 
-    def storeEnhancedScan(self, url, dst):
-        url += ENHANCED_SCAN + '.png'
-        imageFileName = readImageFromURL(url)
+    def storeEnhancedScan(self, baseURL, dst):
+        baseURL += ENHANCED_SCAN + '.png'
+        imageFileName = readImageFromURL(baseURL)
         if (imageFileName == 'NOT_FOUND'):
             print('[INFO] No enhanced scan for this image..')
             return None
         copyfile(imageFileName, dst + '/' + imageFileName)
         os.remove(imageFileName)
 
-    def interpretResultFromURL(self, baseURL, barcode, boundary=None):
+    def interpretResultFromEnhancedScan(self, baseURL):
+        url += ENHANCED_SCAN + '.png'
+        imageFileName = readImageFromURL(baseURL)
+        if (imageFileName == 'NOT_FOUND'):
+            print('[INFO] No enhanced scan for this image..')
+            return None
+        print('[INFO] using preexisting enhanced scan when no boundary found')
+        img = cv.imread(imageFileName, cv.IMREAD_UNCHANGED)
+        # Start intepreting from existing enhanced scan
+        # Detect line location
+        maxtab, numberOfLines, testAColor, testBColor, controlLineColor = self.detectLinesWithPeak(
+            img)
+        testA, testB, control = self.detectLinesWithRelativeLocation(maxtab)
+
+        print('[INFO] Peak Color result from enhanced image',
+              testAColor, testBColor, controlLineColor)
+        show_image(img)
+
+        return InterpretationResult(img, controlLineColor, testAColor, testBColor, numberOfLines)
+
+    """
+        TODO: the barcode is not necessary
+    """
+
+    def interpretResultFromURL(self, baseURL, barcode, boundary=None, imageType=RDT_SCAN):
         print('[INFO] interpretResultFromURL')
         # Preprocessing
-        for imageType in [RDT_SCAN, MANUAL_PHOTO]:
-            url = baseURL + imageType + '.png'
-            print('YO', imageType, MANUAL_PHOTO, imageType == MANUAL_PHOTO)
-            imageFileName = readImageFromURL(
-                url, isManualPhoto=(imageType == MANUAL_PHOTO), output_path=self.output_path)
-            print('[IMAGE FILE NAME]', imageFileName)
-            if (imageFileName == 'NOT_FOUND'):
-                print('[INFO] URL invalid..')
-                continue
-            parts = imageFileName.split('.')
-            imageName = parts[0]
-            imageExtension = parts[1]
-            parts = imageName.split('_')
-            barcode = parts[0]
-            imageType = parts[1]
-            DIR_PATH = ROOT_DETECTION_DIR
+        url = baseURL + imageType + '.png'
+        imageFileName = readImageFromURL(
+            url, isManualPhoto=(imageType == MANUAL_PHOTO), output_path=self.output_path)
+        print('[IMAGE FILE NAME]', imageFileName)
+        if (imageFileName == 'NOT_FOUND'):
+            print('[INFO] URL invalid..')
+            return None
+        parts = imageFileName.split('.')
+        imageName = parts[0]
+        imageExtension = parts[1]
+        parts = imageName.split('_')
+        barcode = parts[0]
+        imageType = parts[1]
+        DIR_PATH = ROOT_DETECTION_DIR
 
-            # Detection Checking
-            if boundary is None:
-                detectionResult = ImageProcessor.captureRDT(
-                    self, imageFileName)
-                if detectionResult == None:
-                    # if detectionResult == None or detectionResult.sizeResult == SizeResult.INVALID:
-                    DIR_PATH += '/' + FALSE_SUBDIR + '/' + CANNOT_DETECT
-                else:
-                    DIR_PATH += '/' + TRUE_SUBDIR
+        # Detection Checking
+        if boundary is None:
+            detectionResult = ImageProcessor.captureRDT(
+                self, imageFileName)
+            if detectionResult == None:
+                # if detectionResult == None or detectionResult.sizeResult == SizeResult.INVALID:
+                FALSE_PATH = DIR_PATH + '/' + FALSE_SUBDIR + \
+                    '/' + CANNOT_DETECT + '/' + imageName
+                copyfile(imageFileName, FALSE_PATH + '/' + imageFileName)
+                self.storeEnhancedScan(baseURL, DIR_PATH)
+                with open(DIR_PATH + '/interpretResult.log', 'w') as f:
+                    f.write(
+                        str("[Error] Python cannot detect boundary in detectRDT"))
+                # Try to interpret from existing enhanced scan
+                interpretResult = self.interpretResultFromEnhancedScan(baseURL)
+                if interpretResult is None:
+                    return None
+                ENHANCED_SCAN_FOUND_PATH = DIR_PATH + '/' + FALSE_SUBDIR + \
+                    '/' + ENHANCED_SCAN_FROM_DEVICE_SUCCESSFUL
+                createFilePath(ENHANCED_SCAN_FOUND_PATH)
+                # Writing result and logs
+                with open(ENHANCED_SCAN_FOUND_PATH + '/interpretResult.txt', 'w') as file:
+                    file.write(str(interpretResult))
+                return interpretResult
             else:
                 DIR_PATH += '/' + TRUE_SUBDIR
+        else:
+            DIR_PATH += '/' + TRUE_SUBDIR
 
-            # Interpret Result
-            interpretResult = ImageProcessor.interpretResult(
-                self, imageFileName, boundary)
+        # Interpret Result
+        interpretResult = ImageProcessor.interpretResult(
+            self, imageFileName, boundary)
 
-            if (interpretResult == None):
-                DIR_PATH = ROOT_DETECTION_DIR + '/' + FALSE_SUBDIR + '/' + NO_CONTROL_AREA_FOUND
-            elif (interpretResult.control and interpretResult.testA and interpretResult.testB):
-                DIR_PATH += '/' + FLU_AB_SUBSUBDIR
-            elif (interpretResult.control and interpretResult.testA):
-                DIR_PATH += '/' + FLU_A_SUBSUBDIR
-            elif (interpretResult.control and interpretResult.testB):
-                DIR_PATH += '/' + FLU_B_SUBSUBDIR
-            elif (interpretResult.control):
-                DIR_PATH += '/' + NO_FLU_SUBSUBDIR
-            else:  # Include invalid cases like only testA is true but controlLine is false etc.
-                DIR_PATH += '/' + INVALID_LINE_SUBSUBDIR
+        if (interpretResult == None):
+            DIR_PATH = ROOT_DETECTION_DIR + '/' + FALSE_SUBDIR + '/' + NO_CONTROL_AREA_FOUND
+        elif (interpretResult.control and interpretResult.testA and interpretResult.testB):
+            DIR_PATH += '/' + FLU_AB_SUBSUBDIR
+        elif (interpretResult.control and interpretResult.testA):
+            DIR_PATH += '/' + FLU_A_SUBSUBDIR
+        elif (interpretResult.control and interpretResult.testB):
+            DIR_PATH += '/' + FLU_B_SUBSUBDIR
+        elif (interpretResult.control):
+            DIR_PATH += '/' + NO_FLU_SUBSUBDIR
+        else:  # Include invalid cases like only testA is true but controlLine is false etc.
+            DIR_PATH += '/' + INVALID_LINE_SUBSUBDIR
 
-            DIR_PATH += '/' + imageName
+        DIR_PATH += '/' + imageName
 
-            # Create target directory & all intermediate directories if don't exists
-            if not os.path.exists(DIR_PATH):
-                os.makedirs(DIR_PATH)
-                print("Directory ", DIR_PATH,  " Created ")
-            else:
-                print("Directory ", DIR_PATH,  " already exists")
+        # Create target directory & all intermediate directories if don't exists
+        createFilePath(DIR_PATH)
 
-            # Copy Result Image to desired path
-            if (interpretResult != None):
-                copyfile('result.png', DIR_PATH + '/' +
-                         imageName + '_enhanced.png')
-                copyfile('cropResult.png', DIR_PATH +
-                         '/' + imageName + '_cropped.png')
-                clear_files()
-            copyfile(imageFileName, DIR_PATH + '/' + imageFileName)
-            self.storeEnhancedScan(baseURL, DIR_PATH)
-            with open(DIR_PATH + '/interpretResult.log', 'w') as f:
-                f.write(str(interpretResult))
+        # Copy Result Image to desired path
+        if (interpretResult != None):
+            copyfile('result.png', DIR_PATH + '/' +
+                     imageName + '_enhanced.png')
+            copyfile('cropResult.png', DIR_PATH +
+                     '/' + imageName + '_cropped.png')
+            clear_files()
+        copyfile(imageFileName, DIR_PATH + '/' + imageFileName)
+        self.storeEnhancedScan(baseURL, DIR_PATH)
+        with open(DIR_PATH + '/interpretResult.log', 'w') as f:
+            f.write(str(interpretResult))
 
-            # Clear things up
-            os.remove(imageFileName)
+        # Clear things up
+        os.remove(imageFileName)
+        # TODO: this can be wrong because we should return 2 interpret result for manual photo
 
-            return interpretResult
+        return interpretResult

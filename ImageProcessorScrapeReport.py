@@ -174,35 +174,36 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         URL_PATH = str(S3_URL_BASE_PATH) + \
             str(SECRET) + '/cough/' + str(barcode)
         print('[INFO] current URL path', URL_PATH)
-        interpretResult = self.interpretResultFromURL(
-            URL_PATH, URL_PATH, boundary)
-        if interpretResult is None:
-            # ===== TODO: Do something else if interpretResult is None
-            self.failDetectionCount += 1
-            failDetectionDetail = {
-                "barcode": barcode,
-                "url": URL_PATH,
-                "pcrResult": pcr_result,
-                "resultsUserResponse": results_user_response,
-                "rdtResult": rdt_result,
-                "expertResponse": expert_response,
-                "HighcontrastLineAnswer": high_contrast_line_answer
-            }
-            self.failDetectionDetailList.append(failDetectionDetail)
-            return None
-        if pcr_result and (isinstance(pcr_result, str) or not math.isnan(pcr_result)):
-            self.comparePCRResult(interpretResult, pcr_result)
-        if results_user_response and (isinstance(results_user_response, str) or not math.isnan(results_user_response)):
-            self.compareUserResponse(interpretResult, results_user_response)
-        if high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer)):
-            self.compareHighContrastLine(
-                interpretResult, high_contrast_line_answer)
-        if high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer)):
-            self.compareLineCount(interpretResult, high_contrast_line_answer)
-        if expert_response and (isinstance(expert_response, str) or not math.isnan(expert_response)):
-            self.compareExpertResponse(interpretResult, expert_response)
-        self.compareAndroidResult(
-            rdt_result, pcr_result, results_user_response, high_contrast_line_answer, expert_response)
+        for imageType in [RDT_SCAN, MANUAL_PHOTO]:
+            interpretResult = self.interpretResultFromURL(
+                URL_PATH, URL_PATH, boundary, imageType=imageType)
+            if interpretResult is None:
+                # ===== TODO: Do something else if interpretResult is None
+                self.failDetectionCount += 1
+                failDetectionDetail = {
+                    "barcode": barcode,
+                    "url": URL_PATH,
+                    "pcrResult": pcr_result,
+                    "resultsUserResponse": results_user_response,
+                    "rdtResult": rdt_result,
+                    "expertResponse": expert_response,
+                    "HighcontrastLineAnswer": high_contrast_line_answer
+                }
+                self.failDetectionDetailList.append(failDetectionDetail)
+                return None
+            if pcr_result and (isinstance(pcr_result, str) or not math.isnan(pcr_result)):
+                self.comparePCRResult(interpretResult, pcr_result)
+            if results_user_response and (isinstance(results_user_response, str) or not math.isnan(results_user_response)):
+                self.compareUserResponse(interpretResult, results_user_response)
+            if high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer)):
+                self.compareHighContrastLine(
+                    interpretResult, high_contrast_line_answer)
+            if high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer)):
+                self.compareLineCount(interpretResult, high_contrast_line_answer)
+            if expert_response and (isinstance(expert_response, str) or not math.isnan(expert_response)):
+                self.compareExpertResponse(interpretResult, expert_response)
+            self.compareAndroidResult(
+                rdt_result, pcr_result, results_user_response, high_contrast_line_answer, expert_response)
 
     """
         Output: To generate the truth matrix for each category

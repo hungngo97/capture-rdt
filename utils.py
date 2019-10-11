@@ -4,12 +4,22 @@ import numpy as np
 import os
 import sys
 from numpy import NaN, Inf, arange, isscalar, asarray, array
+import os
 
 FILES_TO_DELETE = [
     'cropResult.png',
     'result.png',
     'interpretResult.txt'
 ]
+
+
+def createFilePath(DIR_PATH):
+    # Create target directory & all intermediate directories if don't exists
+    if not os.path.exists(DIR_PATH):
+        os.makedirs(DIR_PATH)
+        print("Directory ", DIR_PATH,  " Created ")
+    else:
+        print("Directory ", DIR_PATH,  " already exists")
 
 
 def calculateROCStats(truePositive, falsePositive, trueNegative, falseNegative):

@@ -31,9 +31,12 @@ def main():
     barcodes = []
     if args.debugCode:
         barcode = args.debugCode
-        URL_PATH = str(S3_URL_BASE_PATH) + str(SECRET) + "/cough/" + str(barcode)
+        URL_PATH = str(S3_URL_BASE_PATH) + str(SECRET) + \
+            "/cough/" + str(barcode)
         print("[INFO] current URL path", URL_PATH)
-        imgProc.interpretResultFromURL(URL_PATH, URL_PATH)
+        imgProc.interpretResultFromURL(URL_PATH, URL_PATH, imageType=RDT_SCAN)
+        imgProc.interpretResultFromURL(
+            URL_PATH, URL_PATH, imageType=MANUAL_PHOTO)
     else:
         with open(args.barcodes, "r") as file:
             # barcodes = file.read().split(",")
@@ -41,11 +44,15 @@ def main():
         for barcode in barcodes:
             for imageType in [RDT_SCAN, MANUAL_PHOTO]:
                 URL_PATH = (
-                    str(S3_URL_BASE_PATH) + str(SECRET) + "/cough/" + str(barcode)
+                    str(S3_URL_BASE_PATH) + str(SECRET) +
+                    "/cough/" + str(barcode)
                 )
                 print("[INFO] current URL path", URL_PATH)
-                imgProc.interpretResultFromURL(URL_PATH, URL_PATH)
-    # ====== TODO: add multiprocessing here to parallelize ========
+                imgProc.interpretResultFromURL(
+                    URL_PATH, URL_PATH, imageType=RDT_SCAN)
+                # ====== TODO: add multiprocessing here to parallelize ========
+                imgProc.interpretResultFromURL(
+                    URL_PATH, URL_PATH, imageType=MANUAL_PHOTO)
     """
     import multiprocessing
     pool = multiprocessing.Pool()

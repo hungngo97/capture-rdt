@@ -740,9 +740,9 @@ class ImageProcessor:
         with open('variables/variables.json') as json_file:
             variables = json.load(json_file)
         print(img.shape)
-        show_image(img)
+        # show_image(img)
         hls = cv.cvtColor(img, cv.COLOR_BGR2HLS) 
-        show_image(hls)
+        # show_image(hls)
         # hls1 = cv.cvtColor(img, cv.COLOR_RGB2HLS) 
         # show_image(hls1)
         # HSL so only take the L channel to distinguish lines
@@ -859,6 +859,17 @@ class ImageProcessor:
                 testB = True
         return testA, testB, controlLine
 
+    def detectLinesWithRelativeLocation(self, maxtab):
+        testA, testB, control = False, False, False
+        for col, val, width in maxtab:
+            if col > TEST_A_LINE_POSITION - DETECTION_RANGE and col < TEST_A_LINE_POSITION + DETECTION_RANGE:
+                testA = True
+            if col > TEST_B_LINE_POSITION - DETECTION_RANGE and col < TEST_B_LINE_POSITION + DETECTION_RANGE:
+                testB = True
+            if col > CONTROL_LINE_POSITION - DETECTION_RANGE and col < CONTROL_LINE_POSITION + DETECTION_RANGE:
+                control = True
+        return testA, testB, control
+
     def interpretResult(self, src, boundary=None):
         print('[INFO] interpretResult')
         self.src = src
@@ -949,14 +960,12 @@ class ImageProcessor:
             # testB = self.readTestLine(result, Point(TEST_B_LINE_POSITION, 0))
             # show_image(result)
             cv.imwrite('result.png', result)
+
+            # Detect line location
             maxtab, numberOfLines, testAColor, testBColor, controlLineColor = self.detectLinesWithPeak(result)
-            for col, val, width in maxtab:
-                if col > TEST_A_LINE_POSITION - DETECTION_RANGE and col < TEST_A_LINE_POSITION + DETECTION_RANGE:
-                    testA = True
-                if col > TEST_B_LINE_POSITION - DETECTION_RANGE and col < TEST_B_LINE_POSITION + DETECTION_RANGE:
-                    testB = True
-                if col > CONTROL_LINE_POSITION - DETECTION_RANGE and col < CONTROL_LINE_POSITION + DETECTION_RANGE:
-                    control = True
+            testA, testB, control = self.detectLinesWithRelativeLocation(maxtab)
+
+            # Writing result and logs
             with open('interpretResult.txt', 'w') as file:
                 file.write(str(InterpretationResult(result, control, testA, testB, numberOfLines))) 
             if (testAColor != testA or testB != testBColor or control != controlLineColor):
