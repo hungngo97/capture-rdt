@@ -68,7 +68,7 @@ class ImageProcessorScrape(ImageProcessor):
         os.remove(imageFileName)
 
     def interpretResultFromEnhancedScan(self, baseURL):
-        url += ENHANCED_SCAN + '.png'
+        baseURL += ENHANCED_SCAN + '.png'
         imageFileName = readImageFromURL(baseURL)
         if (imageFileName == 'NOT_FOUND'):
             print('[INFO] No enhanced scan for this image..')
@@ -83,7 +83,7 @@ class ImageProcessorScrape(ImageProcessor):
 
         print('[INFO] Peak Color result from enhanced image',
               testAColor, testBColor, controlLineColor)
-        show_image(img)
+        # show_image(img)
 
         return InterpretationResult(img, controlLineColor, testAColor, testBColor, numberOfLines)
 
@@ -143,7 +143,24 @@ class ImageProcessorScrape(ImageProcessor):
             self, imageFileName, boundary)
 
         if (interpretResult == None):
-            DIR_PATH = ROOT_DETECTION_DIR + '/' + FALSE_SUBDIR + '/' + NO_CONTROL_AREA_FOUND
+            DIR_PATH = ROOT_DETECTION_DIR + '/'
+            copyfile(imageFileName, DIR_PATH + '/' + imageFileName)
+            self.storeEnhancedScan(baseURL, DIR_PATH)
+            with open(DIR_PATH + '/interpretResult.log', 'w') as f:
+                f.write(
+                    str("[Error] Python cannot detect boundary in detectRDT"))
+            # Try to interpret from existing enhanced scan
+            interpretResult = self.interpretResultFromEnhancedScan(baseURL)
+            if interpretResult is None:
+                return None
+            ENHANCED_SCAN_FOUND_PATH = DIR_PATH + FALSE_SUBDIR + \
+                '/' + ENHANCED_SCAN_FROM_DEVICE_SUCCESSFUL + '/' + imageFileName
+            createFilePath(ENHANCED_SCAN_FOUND_PATH)
+            # Writing result and logs
+            with open(ENHANCED_SCAN_FOUND_PATH + '/interpretResult.txt', 'w') as file:
+                print('[INFO] writing enhanced scan result')
+                file.write(str(interpretResult))
+            return interpretResult
         elif (interpretResult.control and interpretResult.testA and interpretResult.testB):
             DIR_PATH += '/' + FLU_AB_SUBSUBDIR
         elif (interpretResult.control and interpretResult.testA):
