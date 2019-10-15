@@ -132,6 +132,8 @@ class ImageProcessorScrape(ImageProcessor):
                 # Writing result and logs
                 with open(ENHANCED_SCAN_FOUND_PATH + '/interpretResult.txt', 'w') as file:
                     file.write(str(interpretResult))
+                os.remove(imageFileName)
+
                 return interpretResult
             else:
                 DIR_PATH += '/' + TRUE_SUBDIR
@@ -162,6 +164,8 @@ class ImageProcessorScrape(ImageProcessor):
             with open(ENHANCED_SCAN_FOUND_PATH + '/interpretResult.txt', 'w') as file:
                 print('[INFO] writing enhanced scan result')
                 file.write(str(interpretResult))
+            os.remove(imageFileName)
+
             return interpretResult
         elif (interpretResult.control and interpretResult.testA and interpretResult.testB):
             DIR_PATH += '/' + FLU_AB_SUBSUBDIR
@@ -193,6 +197,4 @@ class ImageProcessorScrape(ImageProcessor):
 
         # Clear things up
         os.remove(imageFileName)
-        # TODO: this can be wrong because we should return 2 interpret result for manual photo
-
         return interpretResult
