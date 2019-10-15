@@ -107,7 +107,7 @@ class ImageProcessorScrape(ImageProcessor):
         parts = imageName.split('_')
         barcode = parts[0]
         imageType = parts[1]
-        DIR_PATH = ROOT_DETECTION_DIR
+        DIR_PATH = imageType + '/' + ROOT_DETECTION_DIR
 
         # Detection Checking
         if boundary is None:
@@ -143,7 +143,9 @@ class ImageProcessorScrape(ImageProcessor):
             self, imageFileName, boundary)
 
         if (interpretResult == None):
-            DIR_PATH = ROOT_DETECTION_DIR + '/'
+            DIR_PATH = imageType + '/' + ROOT_DETECTION_DIR + \
+                '/' + FALSE_SUBDIR + '/' + NO_CONTROL_AREA_FOUND
+            createFilePath(DIR_PATH)
             copyfile(imageFileName, DIR_PATH + '/' + imageFileName)
             self.storeEnhancedScan(baseURL, DIR_PATH)
             with open(DIR_PATH + '/interpretResult.log', 'w') as f:
@@ -153,7 +155,7 @@ class ImageProcessorScrape(ImageProcessor):
             interpretResult = self.interpretResultFromEnhancedScan(baseURL)
             if interpretResult is None:
                 return None
-            ENHANCED_SCAN_FOUND_PATH = DIR_PATH + FALSE_SUBDIR + \
+            ENHANCED_SCAN_FOUND_PATH = imageType + '/' + ROOT_DETECTION_DIR + '/' + FALSE_SUBDIR + \
                 '/' + ENHANCED_SCAN_FROM_DEVICE_SUCCESSFUL + '/' + imageFileName
             createFilePath(ENHANCED_SCAN_FOUND_PATH)
             # Writing result and logs

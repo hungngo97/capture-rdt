@@ -157,7 +157,8 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         return np.array(arr).astype('float32')
 
     def processBarcode(self, barcode, pcr_result, results_user_response,
-                       rdt_result, high_contrast_line_answer, test_strip_boundary, expert_response):
+                       rdt_result, high_contrast_line_answer, test_strip_boundary, expert_response,
+                       imageType):
         print('[INFO] start processBarcode..')
         print('[PREPROCESS] barcode', barcode)
         if barcode is None or not barcode or math.isnan(barcode):
@@ -174,36 +175,35 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         URL_PATH = str(S3_URL_BASE_PATH) + \
             str(SECRET) + '/cough/' + str(barcode)
         print('[INFO] current URL path', URL_PATH)
-        for imageType in [RDT_SCAN, MANUAL_PHOTO]:
-            interpretResult = self.interpretResultFromURL(
-                URL_PATH, URL_PATH, boundary, imageType=imageType)
-            if interpretResult is None:
-                # ===== TODO: Do something else if interpretResult is None
-                self.failDetectionCount += 1
-                failDetectionDetail = {
-                    "barcode": barcode,
-                    "url": URL_PATH,
-                    "pcrResult": pcr_result,
-                    "resultsUserResponse": results_user_response,
-                    "rdtResult": rdt_result,
-                    "expertResponse": expert_response,
-                    "HighcontrastLineAnswer": high_contrast_line_answer
-                }
-                self.failDetectionDetailList.append(failDetectionDetail)
-                return None
-            if pcr_result and (isinstance(pcr_result, str) or not math.isnan(pcr_result)):
-                self.comparePCRResult(interpretResult, pcr_result)
-            if results_user_response and (isinstance(results_user_response, str) or not math.isnan(results_user_response)):
-                self.compareUserResponse(interpretResult, results_user_response)
-            if high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer)):
-                self.compareHighContrastLine(
-                    interpretResult, high_contrast_line_answer)
-            if high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer)):
-                self.compareLineCount(interpretResult, high_contrast_line_answer)
-            if expert_response and (isinstance(expert_response, str) or not math.isnan(expert_response)):
-                self.compareExpertResponse(interpretResult, expert_response)
-            self.compareAndroidResult(
-                rdt_result, pcr_result, results_user_response, high_contrast_line_answer, expert_response)
+        interpretResult = self.interpretResultFromURL(
+            URL_PATH, URL_PATH, boundary, imageType=imageType)
+        if interpretResult is None:
+            # ===== TODO: Do something else if interpretResult is None
+            self.failDetectionCount += 1
+            failDetectionDetail = {
+                "barcode": barcode,
+                "url": URL_PATH,
+                "pcrResult": pcr_result,
+                "resultsUserResponse": results_user_response,
+                "rdtResult": rdt_result,
+                "expertResponse": expert_response,
+                "HighcontrastLineAnswer": high_contrast_line_answer
+            }
+            self.failDetectionDetailList.append(failDetectionDetail)
+            return None
+        if pcr_result and (isinstance(pcr_result, str) or not math.isnan(pcr_result)):
+            self.comparePCRResult(interpretResult, pcr_result)
+        if results_user_response and (isinstance(results_user_response, str) or not math.isnan(results_user_response)):
+            self.compareUserResponse(interpretResult, results_user_response)
+        if high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer)):
+            self.compareHighContrastLine(
+                interpretResult, high_contrast_line_answer)
+        if high_contrast_line_answer and (isinstance(high_contrast_line_answer, str) or not math.isnan(high_contrast_line_answer)):
+            self.compareLineCount(interpretResult, high_contrast_line_answer)
+        if expert_response and (isinstance(expert_response, str) or not math.isnan(expert_response)):
+            self.compareExpertResponse(interpretResult, expert_response)
+        self.compareAndroidResult(
+            rdt_result, pcr_result, results_user_response, high_contrast_line_answer, expert_response)
 
     """
         Output: To generate the truth matrix for each category
@@ -378,7 +378,30 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
         print('Fail detection list')
         print(json.dumps(self.failDetectionDetailList, sort_keys=True, indent=4))
 
-    def processFile(self, file, db):
+    def resetResources(self):
+        self.resultPythonComparisonWithHighContrastLineAnswer = [
+            [0, 0, 0, 0, 0, 0] for _ in range(len(HighContrastLineMappings))]
+        self.resultPythonComparisonWithUserResponse = [
+            [0, 0, 0, 0, 0, 0] for _ in range(len(UserResponseMappings))]
+        self.resultPythonComparisonWithPCRResult = [
+            [0, 0, 0, 0, 0, 0] for _ in range(len(PCRMappings))]
+        self.resultPythonComparisonWithExpertResponse = [
+            [0, 0, 0, 0, 0, 0] for _ in range(len(ExpertResponseMappings))]
+        self.resultAndroidComparisonWithHighContrastLineAnswer = [
+            [0, 0, 0, 0, 0, 0] for _ in range(len(HighContrastLineMappings))]
+        self.resultAndroidComparisonWithUserResponse = [
+            [0, 0, 0, 0, 0, 0] for _ in range(len(UserResponseMappings))]
+        self.resultAndroidComparisonWithPCRResult = [
+            [0, 0, 0, 0, 0, 0] for _ in range(len(PCRMappings))]
+        self.resultAndroidComparisonWithExpertResponse = [
+            [0, 0, 0, 0, 0, 0] for _ in range(len(ExpertResponseMappings))]
+        self.lineCountResult = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] for _ in range(4)]
+        self.failDetectionCount = 0
+        self.failDetectionDetailList = []
+
+    def processFile(self, file, db, imageType):
+        self.resetResources()
         print('[INFO] processing filename ', file)
         df = pd.read_csv(file)
         print(df.head(5))
@@ -399,7 +422,8 @@ class ImageProcessorScrapeReport(ImageProcessorScrape):
                 validBarcodes += 1
                 self.incrementCategoryMapping(row)
                 self.processBarcode(row[BARCODE], row[PCR_RESULT], row[RESULTS_USER_RESPONSE],
-                                    row[RDT_RESULT], row[HIGH_CONTRAST_LINE_ANSWER], row[TEST_STRIP_BOUNDARY], row[EXPERT_RESPONSE])
+                                    row[RDT_RESULT], row[HIGH_CONTRAST_LINE_ANSWER], 
+                                    row[TEST_STRIP_BOUNDARY], row[EXPERT_RESPONSE], imageType)
 
                 # BREAK DEBUG
                 DEBUG_counter += 1

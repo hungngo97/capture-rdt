@@ -8,6 +8,9 @@ import numpy as np
 from multiprocessing import Pool
 from multiprocessing import cpu_count
 import ImageProcessorScrapeReport
+from urlConstants import (
+    RDT_SCAN, MANUAL_PHOTO, ENHANCED_SCAN
+)
 
 """
 TODO: for parallel processing
@@ -88,7 +91,7 @@ def processNewPeakConstant(threshold, tpr, fpr, maxF1Score, maxF1Threshold, f, d
     with open('variables/variables.json', 'w+') as json_file:
         json.dump(variables, json_file)
     imgProc = ImageProcessorScrapeReport.ImageProcessorScrapeReport('')
-    pythonResultStats = imgProc.processFile(f, db)
+    pythonResultStats = imgProc.processFile(f, db, imageType=RDT_SCAN)
     if (pythonResultStats['python_expert_response']['f1Score'] > maxF1Score):
         maxF1Score = pythonResultStats['python_expert_response']['f1Score']
         maxF1Threshold = threshold
