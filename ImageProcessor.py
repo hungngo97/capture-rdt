@@ -17,7 +17,8 @@ from constants import (OVER_EXP_THRESHOLD, UNDER_EXP_THRESHOLD, OVER_EXP_WHITE_C
                        FIDUCIAL_DISTANCE, ANGLE_THRESHOLD, LINE_SEARCH_WIDTH, CONTROL_LINE_POSITION, 
                        TEST_A_LINE_POSITION, TEST_B_LINE_POSITION, INTENSITY_THRESHOLD, PEAK_HEIGHT_THRESHOLD,
                        CONTROL_INTENSITY_PEAK_THRESHOLD, TEST_INTENSITY_PEAK_THRESHOLD, DETECTION_RANGE,
-                       NUM_OF_NEIGHBOR_COLOR_DETECTION)
+                       NUM_OF_NEIGHBOR_COLOR_DETECTION, RED_COLOR_HIGH_HUE_LOWER, RED_COLOR_HIGH_HUE_UPPER,
+                       RED_COLOR_LOW_HUE_LOWER, RED_COLOR_LOW_HUE_UPPER)
 from result import (ExposureResult, CaptureResult, InterpretationResult, SizeResult)
 from utils import (show_image, resize_image, Point, Rect, crop_rect, peakdet)
 import json
@@ -614,6 +615,28 @@ class ImageProcessor:
         #     cropResultWindow.reshape((RESULT_WINDOW_RECT_HEIGHT, self.fluRefImg.shape[0] - 2 * RESULT_WINDOW_RECT_WIDTH_PADDING))
         #     show_image(transformedImage)
         return cropResultWindow
+
+    """
+        TODO: Can make this code more generic by detecting any colors by passing in color ranges
+    """
+    def calculateRedColorPercentage(self, img):
+        print('[INFO] detectRedColor()')
+        hsv = cv.cvtColor(img, cv.COLOR_RGB2BGR)
+        hsv = cv.cvtColor(hsv, cv.COLOR_BGR2HSV)
+
+        lower_red_threshold = cv.inRange(hsv, RED_COLOR_LOW_HUE_LOWER, RED_COLOR_LOW_HUE_UPPER)
+        upper_red_threshold = cv.inRange(hsv, RED_COLOR_HIGH_HUE_LOWER, RED_COLOR_HIGH_HUE_UPPER)
+
+        red_threshold = cv.addWeighted(lower_red_threshold, 1.0, upper_red_threshold, 1.0)
+
+        red_color_percentage = cv.countNonZero(red_threshold) / (red_threshold.shape[0] * red_threshold.shape[1])
+
+        return red_color_percentage
+
+    def detectBlood(self, img, blood_threshold=0.25):
+        print('[INFO] detectBlood()')
+        red_color_percentage = self.calculateRedColorPercentage(img)
+        return red_color_percentage > blood_threshold
 
     def checkControlLine(self, img):
         print('[INFO] checkControlLine')

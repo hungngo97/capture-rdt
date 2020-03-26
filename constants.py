@@ -67,3 +67,12 @@ NUM_OF_NEIGHBOR_COLOR_DETECTION = 10
 
 # Constants from variables json file
 PEAK_HEIGHT_THRESHOLD = variables["PEAK_HEIGHT_THRESHOLD"]
+
+# Red color range
+RED_COLOR_LOW_HUE_LOWER = np.array(
+    [0, 100, 100]
+)
+
+RED_COLOR_LOW_HUE_UPPER = np.array([10, 255, 255])
+RED_COLOR_HIGH_HUE_LOWER = np.array([160, 100, 100])
+RED_COLOR_HIGH_HUE_UPPER = np.array([179, 255, 255])
